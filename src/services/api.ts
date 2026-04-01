@@ -5,7 +5,7 @@
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { LoginResponse, ApiError } from '../types';
-import { storage } from './helpers';
+import { storage } from '../utils/helpers';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 

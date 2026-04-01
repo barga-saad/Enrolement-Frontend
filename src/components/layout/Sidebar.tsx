@@ -1,0 +1,111 @@
+/**
+ * Sidebar Navigation Component
+ */
+
+import { useNavigate, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Users, Shield, FileText, LogOut, X } from 'lucide-react';
+import { useAuth } from '../../hooks';
+
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { logout, user } = useAuth();
+
+  const menuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+    { icon: Users, label: 'Users', path: '/users', requiredRole: 'PROFIL_ADMIN_CENTRAL' },
+    { icon: Shield, label: 'Roles', path: '/roles', requiredRole: 'PROFIL_ADMIN_CENTRAL' },
+    { icon: FileText, label: 'Partners', path: '/partners' },
+  ];
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const isActive = (path: string) => location.pathname === path;
+  const canAccess = (requiredRole?: string) =>
+    !requiredRole || user?.roleNames.includes(requiredRole);
+
+  return (
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={onClose}
+        ></div>
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`fixed md:static w-64 h-screen bg-white shadow-bcp-medium z-40 transform transition-transform md:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Header */}
+        <div className="p-6 border-b border-bcp-grey-dark">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold bg-gradient-bcp bg-clip-text text-transparent">
+              BCP
+            </h2>
+            <button
+              className="md:hidden text-bcp-brown hover:text-bcp-orange"
+              onClick={onClose}
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <p className="text-sm text-bcp-grey-text mt-1">Enrollment Platform</p>
+        </div>
+
+        {/* Navigation Menu */}
+        <nav className="flex-1 p-4 space-y-2">
+          {menuItems.map((item) => {
+            if (!canAccess(item.requiredRole)) return null;
+
+            return (
+              <button
+                key={item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  onClose();
+                }}
+                className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition ${
+                  isActive(item.path)
+                    ? 'bg-gradient-bcp text-white'
+                    : 'text-bcp-grey-text hover:bg-bcp-grey hover:text-bcp-brown'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-bcp-grey-dark space-y-2">
+          <div className="px-4 py-2">
+            <p className="text-sm font-medium text-bcp-brown">{user?.firstName} {user?.lastName}</p>
+            <p className="text-xs text-bcp-grey-text">{user?.roleNames[0]}</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center space-x-3 px-4 py-2 text-status-error hover:bg-status-error hover:bg-opacity-10 rounded-lg transition"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Logout</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default Sidebar;

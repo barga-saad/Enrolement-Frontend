@@ -4,7 +4,7 @@
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { LoginResponse, ApiError } from '../types';
+import { LoginResponse, ApiError, ApiResponse } from '../types';
 import { storage } from '../utils/helpers';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -52,7 +52,7 @@ export const apiClient = createApiClient();
 export const apiService = {
   // Auth endpoints
   login: (username: string, password: string) =>
-    apiClient.post<LoginResponse>('/auth/login', { username, password }),
+    apiClient.post<ApiResponse<LoginResponse>>('/auth/login', { username, password }),
 
   logout: () =>
     apiClient.post('/auth/logout'),

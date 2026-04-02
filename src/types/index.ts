@@ -33,7 +33,15 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
-  user: User;
+  refreshToken: string;
+  tokenType: string;
+  expiresIn: number;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data: T;
 }
 
 // Role Types

@@ -8,6 +8,26 @@ import { AuthState, User } from '../types';
 import { storage } from '../utils/helpers';
 import { apiService } from '../services/api';
 
+/**
+ * Helper function to decode JWT token and extract claims
+ */
+function decodeJWT(token: string): Record<string, any> {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return {};
+  }
+}
+
 interface AuthStore extends AuthState {
   setToken: (token: string) => void;
   setUser: (user: User) => void;
@@ -33,8 +53,39 @@ export const useAuthStore = create<AuthStore>((set) => ({
   login: async (username: string, password: string) => {
     set({ isLoading: true, error: null });
     try {
+      console.log('[Auth] Attempting login for user:', username);
       const response = await apiService.login(username, password);
-      const { token, user } = response.data;
+      console.log('[Auth] Login response received:', response);
+      
+      // Extract from ApiResponse wrapper: response.data.data contains LoginResponse
+      const loginData = response.data.data;
+      console.log('[Auth] Login data extracted:', loginData);
+      
+      if (!loginData || !loginData.token) {
+        throw new Error('No token received from server');
+      }
+      
+      const token = loginData.token;
+      console.log('[Auth] Token extracted:', token.substring(0, 50) + '...');
+
+      // Decode JWT to extract user info from claims
+      const decodedUser = decodeJWT(token);
+      console.log('[Auth] JWT decoded:', decodedUser);
+      
+      const user: User = {
+        id: 0, // Not in JWT claims
+        username: decodedUser.preferred_username || username,
+        email: decodedUser.email || '',
+        firstName: decodedUser.given_name || '',
+        lastName: decodedUser.family_name || '',
+        isActive: true,
+        roleNames: decodedUser.roles || [],
+        createdAt: '',
+        updatedAt: '',
+        deletedAt: null,
+        isDeleted: false,
+      };
+      console.log('[Auth] User object created:', user);
 
       // Store in Zustand
       set({
@@ -43,12 +94,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       });
+      console.log('[Auth] State updated - isAuthenticated should be true now');
 
       // Persist to localStorage
       storage.set('authToken', token);
       storage.set('user', user);
+      console.log('[Auth] Data persisted to localStorage');
+      
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Login failed';
+      console.error('[Auth] Login error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
+      console.error('[Auth] Error message:', errorMessage);
       set({
         error: errorMessage,
         isLoading: false,

@@ -3,17 +3,25 @@
  * User authentication interface with BCP branding
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks';
 import { Lock, Mail } from 'lucide-react';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login, error: authError, isLoading } = useAuth();
+  const { login, error: authError, isLoading, isAuthenticated } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  // Auto-navigate to dashboard after successful login
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('[LoginPage] isAuthenticated is true, navigating to dashboard');
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +34,7 @@ const LoginPage = () => {
 
     try {
       await login(username, password);
-      navigate('/');
+      // Navigation will happen via useEffect when isAuthenticated becomes true
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');
     }

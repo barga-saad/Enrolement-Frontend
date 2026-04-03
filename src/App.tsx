@@ -18,6 +18,7 @@ import PartnersPage from './components/pages/PartnersPage';
 // Components
 import PrivateRoute from './components/common/PrivateRoute';
 import Layout from './components/layout/Layout';
+import { ToastContainer } from './components/common/ToastContainer';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -35,33 +36,36 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={<LoginPage />} />
+    <>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<LoginPage />} />
 
-        {/* Protected Routes */}
-        <Route
-          path="/*"
-          element={
-            isAuthenticated ? (
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<DashboardPage />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/users" element={<UsersPage />} />
-                  <Route path="/roles" element={<RolesPage />} />
-                  <Route path="/partners" element={<PartnersPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Layout>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+          {/* Protected Routes */}
+          <Route
+            path="/*"
+            element={
+              isAuthenticated ? (
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/users" element={<UsersPage />} />
+                    <Route path="/roles" element={<RolesPage />} />
+                    <Route path="/partners" element={<PartnersPage />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+      <ToastContainer />
+    </>
   );
 }
 

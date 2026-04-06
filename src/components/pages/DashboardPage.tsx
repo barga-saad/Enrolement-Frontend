@@ -140,15 +140,22 @@ const DashboardPage = () => {
     }
   };
 
+  const ROLE_LABELS: Record<string, string> = {
+    PROFIL_ADMIN_CENTRAL: 'Admin Central',
+    PROFIL_SAISIE: 'Saisie',
+    PROFIL_VALIDATEUR: 'Validateur',
+    PROFIL_CONSULTATION: 'Consultation',
+  };
+
   const StatCard = ({ icon: Icon, label, value, color }: any) => (
-    <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-600 text-sm font-medium">{label}</p>
-          <p className={`text-4xl font-bold mt-2 ${color}`}>{loading ? '...' : value}</p>
+          <p className="text-gray-500 text-sm font-medium">{label}</p>
+          <p className={`text-3xl font-bold mt-2 ${color}`}>{loading ? '...' : (value ?? 0)}</p>
         </div>
-        <div className={`${color} bg-opacity-10 p-4 rounded-lg`}>
-          <Icon size={28} className={color} />
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-bcp-orange/10 to-bcp-brown/10 flex items-center justify-center">
+          <Icon size={24} className="text-bcp-brown" />
         </div>
       </div>
     </div>
@@ -183,13 +190,15 @@ const DashboardPage = () => {
       {/* Page Header */}
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-          {isAdmin && <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">👑 Admin</span>}
+          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+          {user?.roleNames?.[0] && (
+            <span className="px-3 py-1 bg-bcp-orange/10 text-bcp-brown text-xs font-semibold rounded-lg border border-bcp-orange/20">
+              {ROLE_LABELS[user.roleNames[0]] || user.roleNames[0]}
+            </span>
+          )}
         </div>
-        <p className="text-gray-600 mt-1">
-          {isAdmin 
-            ? 'System overview and management'
-            : 'Your partner enrollment status'}
+        <p className="text-gray-500 text-sm mt-1">
+          Welcome back, {user?.firstName || 'User'}
         </p>
       </div>
 
@@ -208,7 +217,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Recent Activity Section */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="border-b border-gray-200 p-6">
           <h2 className="text-xl font-bold text-gray-800">
             {isAdmin ? 'Recent Activity' : 'Your Partners'}
@@ -253,21 +262,17 @@ const DashboardPage = () => {
       </div>
 
       {/* Info Box */}
-      <div className={`rounded-lg p-6 border ${isAdmin ? 'bg-purple-50 border-purple-200' : 'bg-blue-50 border-blue-200'}`}>
+      <div className="rounded-xl p-6 border border-bcp-orange/20 bg-gradient-to-r from-bcp-orange/5 to-bcp-brown/5">
         <div className="flex items-center gap-3 mb-2">
-          {isAdmin ? (
-            <Shield className="text-purple-700" size={20} />
-          ) : (
-            <TrendingUp className="text-blue-700" size={20} />
-          )}
-          <h3 className={`font-semibold ${isAdmin ? 'text-purple-900' : 'text-blue-900'}`}>
-            {isAdmin ? 'Admin Controls' : 'Your Role'}
+          <Shield className="text-bcp-brown" size={20} />
+          <h3 className="font-semibold text-bcp-brown">
+            {isAdmin ? 'Administration' : 'Votre Profil'}
           </h3>
         </div>
-        <p className={isAdmin ? 'text-purple-800 text-sm' : 'text-blue-800 text-sm'}>
+        <p className="text-bcp-brown/80 text-sm">
           {isAdmin 
-            ? 'You have full access to user and role management. You can create, edit, and delete users and roles, and manage permissions.'
-            : `You are authorized as ${user?.roleNames?.[0]?.replace(/([A-Z])/g, ' $1').trim() || 'User'}. You can view and manage partners based on your permissions.`}
+            ? 'Vous avez un accès complet à la gestion des utilisateurs, rôles et permissions.'
+            : `Profil: ${ROLE_LABELS[user?.roleNames?.[0] || ''] || user?.roleNames?.[0] || 'Aucun rôle'}. Gérez les partenaires selon vos permissions.`}
         </p>
       </div>
     </div>

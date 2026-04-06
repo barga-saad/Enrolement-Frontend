@@ -1,15 +1,12 @@
-/**
+﻿/**
  * Users Management Page
- * Complete user management system with CRUD operations
+ * Manage users and assign roles
  */
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Eye, EyeOff } from 'lucide-react';
-import { FormInput, FormSection } from '../common/FormComponents';
-import { Table, TableColumn } from '../common/Table';
+import { Plus, Edit2, Trash2, Search, Eye, EyeOff, Shield, X, UserPlus, ArrowLeft } from 'lucide-react';
 import { useToast } from '../../utils/toastStore';
 import { apiService } from '../../services/api';
-import { validators, validateForm, hasErrors } from '../../utils/validation';
 
 interface User {
   id: number;
@@ -22,360 +19,472 @@ interface User {
   createdAt: string;
 }
 
+interface Role {
+  id: number;
+  roleName: string;
+  description: string;
+  isActive: boolean;
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  PROFIL_ADMIN_CENTRAL: 'Admin Central',
+  PROFIL_SAISIE: 'Data Entry',
+  PROFIL_VALIDATEUR: 'Validator',
+  PROFIL_CONSULTATION: 'Consultation',
+};
+
 type ViewMode = 'list' | 'create' | 'edit';
 
 export default function UsersPage() {
   const toast = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [users, setUsers] = useState<User[]>([]);
+  const [allRoles, setAllRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [formErrors, setFormErrors] = useState<Record<string, string | null>>({});
+  const [roleModalUser, setRoleModalUser] = useState<User | null>(null);
+  const [assigningRole, setAssigningRole] = useState(false);
 
-  const [formData, setFormData] = useState<Partial<User> & { password?: string }>({
-    isActive: true,
-    roleNames: [],
-  });
+  const [formData, setFormData] = useState<{
+    username: string; email: string; firstName: string; lastName: string;
+    password: string; isActive: boolean;
+  }>({ username: '', email: '', firstName: '', lastName: '', password: '', isActive: true });
 
-  // Fetch users on mount
   useEffect(() => {
-    fetchUsers();
+    fetchData();
   }, []);
 
-  // Load users from API
-  const fetchUsers = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await apiService.getUsers();
-      // Admin endpoints return data directly, not wrapped in ApiResponse
-      const data = Array.isArray(response.data) ? response.data : [];
-      setUsers(data);
-      toast.success('Users loaded');
-    } catch (error: any) {
-      console.error('Error loading users:', error);
-      toast.error('Failed to load users');
-      // Mock data
-      setUsers([
-        {
-          id: 1,
-          username: 'admin',
-          email: 'admin@bcp.com',
-          firstName: 'Admin',
-          lastName: 'User',
-          isActive: true,
-          roleNames: ['ADMIN'],
-          createdAt: '2024-01-01',
-        },
-        {
-          id: 2,
-          username: 'validator',
-          email: 'validator@bcp.com',
-          firstName: 'Validator',
-          lastName: 'User',
-          isActive: true,
-          roleNames: ['VALIDATOR'],
-          createdAt: '2024-01-15',
-        },
+      const [usersRes, rolesRes] = await Promise.all([
+        apiService.getUsers(),
+        apiService.getRoles(),
       ]);
+      setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
+      setAllRoles(Array.isArray(rolesRes.data) ? rolesRes.data : []);
+    } catch (error: any) {
+      console.error('Error loading data:', error);
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
   };
 
-  // Validation rules
-  const validationRules = {
-    username: [
-      validators.required('Username'),
-      validators.minLength(3),
-    ],
-    email: [
-      validators.required('Email'),
-      validators.email(),
-    ],
-    firstName: [validators.required('First name')],
-    lastName: [validators.required('Last name')],
-    password: viewMode === 'create' ? [validators.required(' Password'), validators.minLength(6)] : [],
-  };
-
-  // Filter users
   const filteredUsers = users.filter((u) =>
     u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    `${u.firstName} ${u.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Validate form
-  const validateFormData = () => {
-    const errors = validateForm(formData, validationRules as any);
-    setFormErrors(errors);
-    return !hasErrors(errors);
-  };
-
-  // Handle submit
   const handleSubmit = async () => {
-    if (!validateFormData()) {
-      toast.error('Please fix validation errors');
+    if (!formData.username || !formData.email || !formData.firstName || !formData.lastName) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    if (viewMode === 'create' && (!formData.password || formData.password.length < 6)) {
+      toast.error('Password must be at least 6 characters');
       return;
     }
 
     try {
       if (viewMode === 'create') {
-        const newUserData = {
+        await apiService.createUser({
           username: formData.username,
           email: formData.email,
           firstName: formData.firstName,
           lastName: formData.lastName,
           password: formData.password,
           isActive: formData.isActive,
-        };
-
-        await apiService.createUser(newUserData);
-        toast.success('User created successfully!');
-        await fetchUsers();
-        resetForm();
-      } else if (viewMode === 'edit' && selectedUser) {
-        const updateData = {
+        });
+        toast.success('User created successfully');
+      } else if (selectedUser) {
+        await apiService.updateUser(selectedUser.id, {
           email: formData.email,
           firstName: formData.firstName,
           lastName: formData.lastName,
           isActive: formData.isActive,
-        };
-
-        await apiService.updateUser(selectedUser.id, updateData);
-        toast.success('User updated successfully!');
-        await fetchUsers();
-        resetForm();
+        });
+        toast.success('User updated successfully');
       }
+      await fetchData();
+      resetForm();
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || 'Operation failed';
-      toast.error(errorMsg);
+      toast.error(error.response?.data?.message || 'Operation failed');
     }
   };
 
-  // Delete user
   const handleDelete = async (userId: number) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-
+    if (!confirm('Delete this user?')) return;
     try {
       await apiService.deleteUser(userId);
-      toast.success('User deleted successfully!');
-      await fetchUsers();
-    } catch (error: any) {
+      toast.success('User deleted');
+      await fetchData();
+    } catch {
       toast.error('Failed to delete user');
     }
   };
 
-  // Reset form
+  const handleAssignRole = async (userId: number, roleId: number) => {
+    setAssigningRole(true);
+    try {
+      await apiService.assignRoleToUser(userId, roleId);
+      toast.success('Role assigned successfully');
+      await fetchData();
+      // Update the modal user
+      const updated = (await apiService.getUsers()).data;
+      const refreshed = (Array.isArray(updated) ? updated : []).find((u: User) => u.id === userId);
+      if (refreshed) setRoleModalUser(refreshed);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to assign role');
+    } finally {
+      setAssigningRole(false);
+    }
+  };
+
+  const handleRevokeRole = async (userId: number, roleId: number) => {
+    setAssigningRole(true);
+    try {
+      await apiService.revokeRoleFromUser(userId, roleId);
+      toast.success('Role revoked');
+      await fetchData();
+      const updated = (await apiService.getUsers()).data;
+      const refreshed = (Array.isArray(updated) ? updated : []).find((u: User) => u.id === userId);
+      if (refreshed) setRoleModalUser(refreshed);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to revoke role');
+    } finally {
+      setAssigningRole(false);
+    }
+  };
+
   const resetForm = () => {
-    setFormData({ isActive: true, roleNames: [] });
-    setFormErrors({});
+    setFormData({ username: '', email: '', firstName: '', lastName: '', password: '', isActive: true });
     setViewMode('list');
     setSelectedUser(null);
   };
 
-  const columns: TableColumn<User>[] = [
-    { key: 'username', header: 'Username', sortable: true },
-    { key: 'email', header: 'Email', sortable: true },
-    {
-      key: 'firstName',
-      header: 'Name',
-      render: (_: string, row: User) => `${row.firstName} ${row.lastName}`,
-    },
-    {
-      key: 'roleNames',
-      header: 'Roles',
-      render: (roles: string[]) => (
-        <div className="flex gap-1 flex-wrap">
-          {roles.map((role) => (
-            <span key={role} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-              {role}
-            </span>
-          ))}
-        </div>
-      ),
-    },
-    {
-      key: 'isActive',
-      header: 'Status',
-      render: (isActive: boolean) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-          isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-        }`}>
-          {isActive ? 'Active' : 'Inactive'}
-        </span>
-      ),
-    },
-  ];
-
-  // --- LIST VIEW ---
+  // ─── LIST VIEW ───
   if (viewMode === 'list') {
     return (
       <div className="space-y-6">
+        {/* Role Assignment Modal */}
+        {roleModalUser && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-bcp-orange to-bcp-brown px-6 py-4 flex items-center justify-between">
+                <h3 className="text-white font-semibold text-lg">
+                  Manage Roles — {roleModalUser.firstName} {roleModalUser.lastName}
+                </h3>
+                <button onClick={() => setRoleModalUser(null)} className="text-white/80 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* Current roles */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Current Roles</h4>
+                  {roleModalUser.roleNames.length === 0 ? (
+                    <p className="text-sm text-gray-400 italic">No roles assigned</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {roleModalUser.roleNames.map((roleName) => {
+                        const role = allRoles.find(r => r.roleName === roleName);
+                        return (
+                          <span key={roleName} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-bcp-orange/10 text-bcp-brown border border-bcp-orange/20 rounded-lg text-sm font-medium">
+                            <Shield size={14} />
+                            {ROLE_LABELS[roleName] || roleName}
+                            <button
+                              onClick={() => role && handleRevokeRole(roleModalUser.id, role.id)}
+                              disabled={assigningRole}
+                              className="ml-1 text-red-400 hover:text-red-600 disabled:opacity-50"
+                              title="Revoke role"
+                            >
+                              <X size={14} />
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Available roles */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Assign Role</h4>
+                  <div className="space-y-2">
+                    {allRoles
+                      .filter(r => r.isActive && !roleModalUser.roleNames.includes(r.roleName))
+                      .map((role) => (
+                        <button
+                          key={role.id}
+                          onClick={() => handleAssignRole(roleModalUser.id, role.id)}
+                          disabled={assigningRole}
+                          className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-bcp-orange/5 hover:border-bcp-orange/30 transition disabled:opacity-50 group"
+                        >
+                          <div className="text-left">
+                            <p className="font-medium text-gray-700 group-hover:text-bcp-brown">
+                              {ROLE_LABELS[role.roleName] || role.roleName}
+                            </p>
+                            <p className="text-xs text-gray-400">{role.description}</p>
+                          </div>
+                          <UserPlus size={18} className="text-gray-300 group-hover:text-bcp-orange" />
+                        </button>
+                      ))}
+                    {allRoles.filter(r => r.isActive && !roleModalUser.roleNames.includes(r.roleName)).length === 0 && (
+                      <p className="text-sm text-gray-400 italic">All roles are already assigned</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                <button
+                  onClick={() => setRoleModalUser(null)}
+                  className="px-5 py-2 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage users and assign roles</p>
+          </div>
           <button
             onClick={() => {
               setViewMode('create');
               setSelectedUser(null);
-              setFormData({ isActive: true, roleNames: [] });
+              setFormData({ username: '', email: '', firstName: '', lastName: '', password: '', isActive: true });
             }}
-            className="flex items-center gap-2 bg-cyan-700 text-white px-6 py-2 rounded-full font-semibold hover:bg-cyan-800"
+            className="flex items-center gap-2 bg-gradient-to-r from-bcp-orange to-bcp-brown text-white px-5 py-2.5 rounded-lg font-medium hover:shadow-lg transition"
           >
-            <Plus size={20} /> New User
+            <Plus size={18} /> New User
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="bg-white rounded-lg shadow p-6">
+        {/* Search */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <div className="relative">
-            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Search by username or email..."
+              placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-bcp-orange/30 focus:border-bcp-orange text-sm"
             />
           </div>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <Table
-            columns={columns}
-            data={filteredUsers}
-            keyField="id"
-            loading={loading}
-            emptyMessage="No users found"
-            actions={(row) => (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setSelectedUser(row);
-                    setFormData({
-                      username: row.username,
-                      email: row.email,
-                      firstName: row.firstName,
-                      lastName: row.lastName,
-                      isActive: row.isActive,
-                      roleNames: row.roleNames,
-                    });
-                    setViewMode('edit');
-                  }}
-                  className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
-                >
-                  <Edit2 size={16} /> Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(row.id)}
-                  className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
-                >
-                  <Trash2 size={16} /> Delete
-                </button>
-              </div>
-            )}
-          />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {loading ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bcp-orange"></div>
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="p-12 text-center text-gray-400">No users found</div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Roles</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50/50 transition">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-bcp-orange to-bcp-brown flex items-center justify-center text-white text-sm font-bold">
+                          {user.firstName?.[0]}{user.lastName?.[0]}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">{user.firstName} {user.lastName}</p>
+                          <p className="text-xs text-gray-400">@{user.username}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {user.roleNames.length === 0 ? (
+                          <span className="text-xs text-gray-300 italic">No roles</span>
+                        ) : user.roleNames.map((role) => (
+                          <span key={role} className="px-2 py-0.5 bg-bcp-orange/10 text-bcp-brown text-xs rounded-md font-medium">
+                            {ROLE_LABELS[role] || role}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        user.isActive ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {user.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setRoleModalUser(user)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-bcp-orange/10 text-bcp-brown border border-bcp-orange/20 rounded-lg text-xs font-medium hover:bg-bcp-orange/20 transition"
+                          title="Manage roles"
+                        >
+                          <Shield size={14} /> Roles
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setFormData({
+                              username: user.username,
+                              email: user.email,
+                              firstName: user.firstName,
+                              lastName: user.lastName,
+                              password: '',
+                              isActive: user.isActive,
+                            });
+                            setViewMode('edit');
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-xs font-medium hover:bg-blue-100 transition"
+                        >
+                          <Edit2 size={14} /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs font-medium hover:bg-red-100 transition"
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     );
   }
 
-  // --- CREATE/EDIT FORM VIEW ---
-  if (viewMode === 'create' || viewMode === 'edit') {
-    return (
-      <div className="space-y-6 max-w-3xl">
-        <h1 className="text-3xl font-bold text-gray-800">
-          {viewMode === 'create' ? 'New User' : 'Edit User'}
-        </h1>
+  // ─── CREATE / EDIT FORM ───
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <button
+        onClick={resetForm}
+        className="flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm font-medium"
+      >
+        <ArrowLeft size={16} /> Back to Users
+      </button>
 
-        <div className="bg-white rounded-lg shadow p-8 space-y-6">
-          <FormSection title="User Information">
-            <FormInput
-              label="Username"
-              required
+      <h1 className="text-2xl font-bold text-gray-800">
+        {viewMode === 'create' ? 'Create User' : 'Edit User'}
+      </h1>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+            <input
+              type="text"
               disabled={viewMode === 'edit'}
-              value={formData.username || ''}
+              value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              error={formErrors.username || undefined}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-bcp-orange/30 focus:border-bcp-orange text-sm disabled:bg-gray-50 disabled:text-gray-400"
             />
-            <FormInput
-              label="Email"
-              required
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input
               type="email"
-              value={formData.email || ''}
+              value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              error={formErrors.email || undefined}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-bcp-orange/30 focus:border-bcp-orange text-sm"
             />
-            <div className="grid grid-cols-2 gap-4">
-              <FormInput
-                label="First Name"
-                required
-                value={formData.firstName || ''}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                error={formErrors.firstName || undefined}
-              />
-              <FormInput
-                label="Last Name"
-                required
-                value={formData.lastName || ''}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                error={formErrors.lastName || undefined}
-              />
-            </div>
-
-            {viewMode === 'create' && (
-              <div className="relative">
-                <FormInput
-                  label="Password"
-                  required
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password || ''}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  error={formErrors.password || undefined}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            )}
-          </FormSection>
-
-          <FormSection title="Status">
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={formData.isActive || false}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="w-4 h-4 rounded"
-              />
-              <span className="text-gray-700">Active User</span>
-            </label>
-          </FormSection>
-
-          {/* Actions */}
-          <div className="flex justify-between items-end pt-6 border-t">
-            <button
-              onClick={resetForm}
-              className="px-6 py-2 border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="px-8 py-2 bg-cyan-700 text-white rounded-full font-bold hover:bg-cyan-800"
-            >
-              💾 Save
-            </button>
           </div>
         </div>
-      </div>
-    );
-  }
 
-  return null;
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+            <input
+              type="text"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-bcp-orange/30 focus:border-bcp-orange text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+            <input
+              type="text"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-bcp-orange/30 focus:border-bcp-orange text-sm"
+            />
+          </div>
+        </div>
+
+        {viewMode === 'create' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-bcp-orange/30 focus:border-bcp-orange text-sm pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.isActive}
+            onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+            className="w-4 h-4 rounded border-gray-300 text-bcp-orange focus:ring-bcp-orange"
+          />
+          <span className="text-sm text-gray-700">Active</span>
+        </label>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <button
+            onClick={resetForm}
+            className="px-5 py-2.5 border border-gray-200 rounded-lg text-gray-600 font-medium hover:bg-gray-50 transition text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-6 py-2.5 bg-gradient-to-r from-bcp-orange to-bcp-brown text-white rounded-lg font-medium hover:shadow-lg transition text-sm"
+          >
+            {viewMode === 'create' ? 'Create User' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

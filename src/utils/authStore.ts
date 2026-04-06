@@ -45,26 +45,40 @@ export const useAuthStore = create<AuthStore>((set) => ({
       const response = await apiService.login(username, password);
       const loginData = response.data.data;
 
-      if (!loginData || !loginData.token) {
-        throw new Error('No token received from server');
-      }
-
       const user: User = {
         id: 0,
-        username: loginData.username || username,
-        email: loginData.email || '',
-        firstName: loginData.firstName || '',
-        lastName: loginData.lastName || '',
+        username: loginData?.username || username,
+        email: loginData?.email || '',
+        firstName: loginData?.firstName || '',
+        lastName: loginData?.lastName || '',
         isActive: true,
-        roleNames: loginData.roleNames || [],
+        roleNames: loginData?.roleNames || [],
         createdAt: '',
         updatedAt: '',
         deletedAt: null,
         isDeleted: false,
       };
 
-      // NOTE: user is auto-synced in the backend — no need to call createUser here
-      const requiresPasswordChange = loginData.requiresPasswordChange === true;
+      const requiresPasswordChange = loginData?.requiresPasswordChange === true;
+
+      // Temp password user: Keycloak won't issue a token, but we still
+      // need to redirect to /change-password
+      if (requiresPasswordChange && !loginData?.token) {
+        set({
+          token: null,
+          user,
+          isAuthenticated: true,
+          requiresPasswordChange: true,
+          isLoading: false,
+        });
+        storage.set('user', user);
+        storage.set('requiresPasswordChange', true);
+        return;
+      }
+
+      if (!loginData || !loginData.token) {
+        throw new Error('No token received from server');
+      }
 
       set({
         token: loginData.token,

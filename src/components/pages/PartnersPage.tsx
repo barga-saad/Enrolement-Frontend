@@ -58,6 +58,21 @@ const PartnersPage = () => {
     (role) => role === 'PROFIL_VALIDATEUR'
   ) || false;
 
+  // Check if user is saisie (data entry)
+  const isSaisie = user?.roleNames?.some(
+    (role) => role === 'PROFIL_SAISIE'
+  ) || false;
+
+  // Check if user is consultation (read-only)
+  const isConsultation = user?.roleNames?.some(
+    (role) => role === 'PROFIL_CONSULTATION'
+  ) || false;
+
+  // Can the user create partners?
+  const canCreate = isAdmin || isSaisie;
+  // Can the user validate partners?
+  const canValidate = isAdmin || isValidator;
+
   const [formErrors, setFormErrors] = useState<Record<string, string | null>>({});
 
   const [transactions, setTransactions] = useState<TransactionType[]>([
@@ -232,7 +247,9 @@ const PartnersPage = () => {
             <h1 className="text-3xl font-bold text-gray-800">Gestion des Partenaires</h1>
             {!isAdmin && (
               <p className="text-sm text-gray-600 mt-1">
-                {isValidator ? 'Vous pouvez valider les partenaires en attente' : 'Vous pouvez consulter les partenaires'}
+                {isSaisie ? 'Vous pouvez saisir et gérer vos partenaires' :
+                 isValidator ? 'Vous pouvez valider les partenaires en attente' :
+                 'Vous pouvez consulter les partenaires'}
               </p>
             )}
           </div>
@@ -242,9 +259,20 @@ const PartnersPage = () => {
                 setViewMode('create');
                 setSelectedPartner(null);
               }}
-              className="flex items-center gap-2 bg-cyan-700 text-white px-6 py-2 rounded-full font-semibold hover:bg-cyan-800"
+              className="flex items-center gap-2 bg-gradient-to-r from-bcp-orange to-bcp-brown text-white px-6 py-2.5 rounded-lg font-semibold hover:shadow-lg transition"
             >
               <Plus size={20} /> Nouveau Partenaire
+            </button>
+          )}
+          {isSaisie && !isAdmin && (
+            <button
+              onClick={() => {
+                setViewMode('create');
+                setSelectedPartner(null);
+              }}
+              className="flex items-center gap-2 bg-gradient-to-r from-bcp-orange to-bcp-brown text-white px-6 py-2.5 rounded-lg font-semibold hover:shadow-lg transition"
+            >
+              <Plus size={20} /> Saisir un Partenaire
             </button>
           )}
         </div>
@@ -273,23 +301,25 @@ const PartnersPage = () => {
             emptyMessage={loading ? 'Loading partners...' : 'No partners found'}
             actions={(row) => (
               <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setSelectedPartner(row);
-                    setViewMode('validate');
-                  }}
-                  className="flex items-center gap-1 bg-cyan-600 text-white px-4 py-1 rounded text-sm hover:bg-cyan-700"
-                >
-                  <Check size={16} /> À valider
-                </button>
+                {canValidate && (row.status === 'pending' || row.status === 'validation') && (
+                  <button
+                    onClick={() => {
+                      setSelectedPartner(row);
+                      setViewMode('validate');
+                    }}
+                    className="flex items-center gap-1 bg-gradient-to-r from-bcp-orange to-bcp-brown text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:shadow-md transition"
+                  >
+                    <Check size={16} /> Valider
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setSelectedPartner(row);
                     setViewMode('consult');
                   }}
-                  className="flex items-center gap-1 bg-purple-600 text-white px-4 py-1 rounded text-sm hover:bg-purple-700"
+                  className="flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-100 px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-100 transition"
                 >
-                  <Eye size={16} /> À consulter
+                  <Eye size={16} /> Consulter
                 </button>
               </div>
             )}
@@ -482,13 +512,13 @@ const PartnersPage = () => {
           <div className="flex justify-between items-end pt-6 border-t">
             <button
               onClick={resetForm}
-              className="px-6 py-2 border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 font-semibold"
+              className="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition"
             >
               Annuler
             </button>
             <button
               onClick={handleSubmit}
-              className="px-8 py-2 bg-cyan-700 text-white rounded-full font-bold hover:bg-cyan-800"
+              className="px-8 py-2.5 bg-gradient-to-r from-bcp-orange to-bcp-brown text-white rounded-lg font-bold hover:shadow-lg transition"
             >
               💾 Sauvegarder
             </button>

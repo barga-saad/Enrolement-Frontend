@@ -52,9 +52,13 @@ export const validators = {
 
   bankAccount: (): ValidationRule => (value: string) => {
     if (!value) return null;
-    // IBAN-like format: 2 letters, 2 digits, then alphanumeric
+    const trimmed = value.replace(/\s/g, '');
+    // Accept IBAN format (e.g. MA76...) or plain numeric (10-30 digits)
     const ibanRegex = /^[A-Z]{2}\d{2}[A-Z0-9]{1,30}$/;
-    return ibanRegex.test(value.toUpperCase()) ? null : 'Invalid bank account number';
+    const numericRegex = /^\d{10,30}$/;
+    return (ibanRegex.test(trimmed.toUpperCase()) || numericRegex.test(trimmed))
+      ? null
+      : 'Invalid bank account number';
   },
 
   custom: (validator: (value: any) => boolean, message: string): ValidationRule => (value: any) => {

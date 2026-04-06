@@ -42,10 +42,10 @@ const ChangePasswordPage = () => {
       await changePassword(user!.username, newPassword);
       setSuccess(true);
       // Clear auth state and redirect to login so user logs in with the new password
-      setTimeout(async () => {
-        await logout();
-        navigate('/login', { replace: true });
-      }, 1500);
+      await logout();
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 500);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to change password. Please try again.');
     }
@@ -83,7 +83,7 @@ const ChangePasswordPage = () => {
                   </svg>
                 </div>
                 <p className="text-green-700 font-semibold">Password changed successfully!</p>
-                <p className="text-gray-500 text-sm mt-1">Redirecting to dashboard…</p>
+                <p className="text-gray-500 text-sm mt-1">Redirecting to login page…</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">

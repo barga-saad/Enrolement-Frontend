@@ -10,7 +10,7 @@ import { Lock, Eye, EyeOff } from 'lucide-react';
 
 const ChangePasswordPage = () => {
   const navigate = useNavigate();
-  const { user, changePassword, logout, isLoading } = useAuth();
+  const { user, changePassword, login, isLoading } = useAuth();
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,11 +41,15 @@ const ChangePasswordPage = () => {
     try {
       await changePassword(user!.username, newPassword);
       setSuccess(true);
-      // Clear auth state and redirect to login so user logs in with the new password
-      await logout();
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 500);
+      // Re-login automatically with the new password, then go to dashboard
+      setTimeout(async () => {
+        try {
+          await login(user!.username, newPassword);
+          navigate('/', { replace: true });
+        } catch {
+          navigate('/login', { replace: true });
+        }
+      }, 1500);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to change password. Please try again.');
     }
@@ -83,7 +87,7 @@ const ChangePasswordPage = () => {
                   </svg>
                 </div>
                 <p className="text-green-700 font-semibold">Password changed successfully!</p>
-                <p className="text-gray-500 text-sm mt-1">Redirecting to login page…</p>
+                <p className="text-gray-500 text-sm mt-1">Redirecting to dashboard…</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">

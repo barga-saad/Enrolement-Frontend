@@ -4,7 +4,6 @@
  */
 
 import { useState } from 'react';
-import { useAuth } from '../../hooks';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 

@@ -16,11 +16,21 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const location = useLocation();
   const { logout, user } = useAuth();
 
+  const ROLE_LABELS: Record<string, string> = {
+    PROFIL_ADMIN_CENTRAL: 'Admin Central',
+    PROFIL_SAISIE:        'Data Entry',
+    PROFIL_VALIDATEUR:    'Validator',
+    PROFIL_CONSULTATION:  'Consultation',
+  };
+
+  const hasRole = (...roles: string[]) =>
+    roles.some(r => user?.roleNames?.includes(r)) || false;
+
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Users, label: 'Users', path: '/users', requiredRole: 'PROFIL_ADMIN_CENTRAL' },
-    { icon: Shield, label: 'Roles', path: '/roles', requiredRole: 'PROFIL_ADMIN_CENTRAL' },
-    { icon: FileText, label: 'Partners', path: '/partners' },
+    { icon: LayoutDashboard, label: 'Dashboard',  path: '/' },
+    { icon: Users,           label: 'Users',      path: '/users',    requiredRole: 'PROFIL_ADMIN_CENTRAL' },
+    { icon: Shield,          label: 'Roles',      path: '/roles',    requiredRole: 'PROFIL_ADMIN_CENTRAL' },
+    { icon: FileText,        label: 'Partners',   path: '/partners' },
   ];
 
   const handleLogout = async () => {
@@ -29,8 +39,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   };
 
   const isActive = (path: string) => location.pathname === path;
-  const canAccess = (requiredRole?: string) =>
-    !requiredRole || user?.roleNames.includes(requiredRole);
+  
+  const canAccess = (requiredRole?: string) => {
+    if (!requiredRole) return true;
+    return user?.roleNames?.includes(requiredRole) || false;
+  };
 
   return (
     <>
@@ -90,14 +103,18 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-bcp-grey-dark space-y-2">
-          <div className="px-4 py-2">
-            <p className="text-sm font-medium text-bcp-brown">{user?.firstName} {user?.lastName}</p>
-            <p className="text-xs text-bcp-grey-text">{user?.roleNames[0]}</p>
+        <div className="p-4 border-t border-gray-300 space-y-2">
+          <div className="px-4 py-2 bg-gray-50 rounded-lg">
+            <p className="text-sm font-bold text-gray-800">{user?.firstName} {user?.lastName}</p>
+            <p className="text-xs text-gray-600 mt-1">
+              {user?.roleNames?.length
+                ? (ROLE_LABELS[user.roleNames[0]] ?? user.roleNames[0])
+                : 'No role assigned'}
+            </p>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-4 py-2 text-status-error hover:bg-status-error hover:bg-opacity-10 rounded-lg transition"
+            className="w-full flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition font-medium"
           >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Logout</span>

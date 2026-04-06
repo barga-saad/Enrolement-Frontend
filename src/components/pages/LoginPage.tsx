@@ -10,18 +10,21 @@ import { Lock, Mail } from 'lucide-react';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login, error: authError, isLoading, isAuthenticated } = useAuth();
+  const { login, error: authError, isLoading, isAuthenticated, requiresPasswordChange } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  // Auto-navigate to dashboard after successful login
+  // Auto-navigate after successful login
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('[LoginPage] isAuthenticated is true, navigating to dashboard');
-      navigate('/', { replace: true });
+      if (requiresPasswordChange) {
+        navigate('/change-password', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, requiresPasswordChange, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

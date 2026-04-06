@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, Eye, EyeOff } from 'lucide-react';
-import { FormInput, FormSelect, FormSection, FormBlock } from '../common/FormComponents';
+import { FormInput, FormSection } from '../common/FormComponents';
 import { Table, TableColumn } from '../common/Table';
 import { useToast } from '../../utils/toastStore';
 import { apiService } from '../../services/api';
@@ -180,7 +180,7 @@ export default function UsersPage() {
     {
       key: 'firstName',
       header: 'Name',
-      render: (firstName: string, row: User) => `${row.firstName} ${row.lastName}`,
+      render: (_: string, row: User) => `${row.firstName} ${row.lastName}`,
     },
     {
       key: 'roleNames',
@@ -242,7 +242,7 @@ export default function UsersPage() {
 
         {/* Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <Table<User>
+          <Table
             columns={columns}
             data={filteredUsers}
             keyField="id"

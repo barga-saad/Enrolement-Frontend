@@ -368,7 +368,7 @@ export default function RolesPage() {
 
         {/* Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <Table<Role>
+          <Table
             columns={columns}
             data={filteredRoles}
             keyField="id"

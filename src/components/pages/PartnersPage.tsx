@@ -9,8 +9,9 @@ import { FormInput, FormSelect, FormSection, FormBlock, FormToggleRow } from '..
 import { Table, TableColumn } from '../common/Table';
 import { Toggle } from '../common/Toggle';
 import { useToast } from '../../utils/toastStore';
+import { useAuth } from '../../hooks';
 import { apiService } from '../../services/api';
-import { validateField, validators, validateForm, hasErrors } from '../../utils/validation';
+import { validators, validateForm, hasErrors } from '../../utils/validation';
 
 interface Partner {
   id: number;
@@ -35,6 +36,7 @@ type ViewMode = 'list' | 'create' | 'edit' | 'validate' | 'consult';
 
 const PartnersPage = () => {
   const toast = useToast();
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +47,16 @@ const PartnersPage = () => {
     country: 'Morocco',
     status: 'active',
   });
+
+  // Check if user is admin
+  const isAdmin = user?.roleNames?.some(
+    (role) => role === 'PROFIL_ADMIN_CENTRAL'
+  ) || false;
+
+  // Check if user is validator
+  const isValidator = user?.roleNames?.some(
+    (role) => role === 'PROFIL_VALIDATEUR'
+  ) || false;
 
   const [formErrors, setFormErrors] = useState<Record<string, string | null>>({});
 
@@ -57,7 +69,7 @@ const PartnersPage = () => {
     { type: 'Mise à disposition', enabled: true, limit: 5000 },
   ]);
 
-  const [compliance, setCompliance] = useState({
+  const [compliance] = useState({
     donnerOrdre: { type: true, number: true, city: true },
     beneficiaire: { type: true, number: true, address: true },
   });
@@ -123,11 +135,26 @@ const PartnersPage = () => {
     classification: [validators.required('Classification')],
   };
 
-  // Filter partners by search term
-  const filteredPartners = partners.filter((p) =>
-    p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter partners by search term and role
+  const filteredPartners = partners.filter((p) => {
+    // Search filter
+    const matchesSearch = p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+
+    // Role-based visibility
+    // Admins see all partners
+    if (isAdmin) return true;
+
+    // Validators see partners awaiting validation
+    if (isValidator) {
+      return p.status === 'pending' || p.status === 'validation';
+    }
+
+    // Others see all partners but can't create/edit their own
+    return true;
+  });
 
   // Validate form
   const validateFormData = () => {
@@ -201,16 +228,25 @@ const PartnersPage = () => {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-800">Gestion des Partenaires</h1>
-          <button
-            onClick={() => {
-              setViewMode('create');
-              setSelectedPartner(null);
-            }}
-            className="flex items-center gap-2 bg-cyan-700 text-white px-6 py-2 rounded-full font-semibold hover:bg-cyan-800"
-          >
-            <Plus size={20} /> Nouveau Partenaire
-          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Gestion des Partenaires</h1>
+            {!isAdmin && (
+              <p className="text-sm text-gray-600 mt-1">
+                {isValidator ? 'Vous pouvez valider les partenaires en attente' : 'Vous pouvez consulter les partenaires'}
+              </p>
+            )}
+          </div>
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setViewMode('create');
+                setSelectedPartner(null);
+              }}
+              className="flex items-center gap-2 bg-cyan-700 text-white px-6 py-2 rounded-full font-semibold hover:bg-cyan-800"
+            >
+              <Plus size={20} /> Nouveau Partenaire
+            </button>
+          )}
         </div>
 
         {/* Search Bar */}
@@ -229,7 +265,7 @@ const PartnersPage = () => {
 
         {/* Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <Table<Partner>
+          <Table
             columns={columns}
             data={filteredPartners}
             keyField="id"

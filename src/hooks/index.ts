@@ -13,8 +13,9 @@ export const useAuth = () => {
   const auth = useAuthStore();
   
   useEffect(() => {
-    // Hydrate auth state on app load
+    // Hydrate from localStorage immediately, then refresh roles from backend
     auth.hydrate();
+    auth.refreshUser();
   }, []);
 
   return {
@@ -23,8 +24,11 @@ export const useAuth = () => {
     isAuthenticated: auth.isAuthenticated,
     isLoading: auth.isLoading,
     error: auth.error,
+    requiresPasswordChange: auth.requiresPasswordChange,
     login: auth.login,
     logout: auth.logout,
+    changePassword: auth.changePassword,
+    refreshUser: auth.refreshUser,
     setError: auth.setError,
   };
 };

@@ -57,6 +57,14 @@ export const apiService = {
   logout: () =>
     apiClient.post('/auth/logout'),
 
+  changePassword: (username: string, newPassword: string) =>
+    apiClient.post('/auth/change-password', { username, newPassword }),
+
+  getMe: (token: string) =>
+    apiClient.get<ApiResponse<LoginResponse>>('/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
   // User endpoints
   getUsers: () =>
     apiClient.get('/admin/users'),

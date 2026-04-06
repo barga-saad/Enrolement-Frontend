@@ -1,32 +1,18 @@
 /**
- * Redux: Auth Store (using Zustand)
- * Global state management for authentication
+ * Auth Store (Zustand)
+ * Global authentication state
+ *
+ * FLOW:
+ *  1. User logs in → backend authenticates via Keycloak + auto-syncs user to DB
+ *  2. If requiresPasswordChange=true → redirect to /change-password
+ *  3. Admin assigns roles in Users Management
+ *  4. User logs in again → roleNames populated → proper access granted
  */
 
 import { create } from 'zustand';
 import { AuthState, User } from '../types';
 import { storage } from '../utils/helpers';
 import { apiService } from '../services/api';
-
-/**
- * Helper function to decode JWT token and extract claims
- */
-function decodeJWT(token: string): Record<string, any> {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Error decoding JWT:', error);
-    return {};
-  }
-}
 
 interface AuthStore extends AuthState {
   setToken: (token: string) => void;
@@ -36,6 +22,8 @@ interface AuthStore extends AuthState {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   hydrate: () => void;
+  refreshUser: () => Promise<void>;
+  changePassword: (username: string, newPassword: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -44,6 +32,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isAuthenticated: false,
   isLoading: false,
   error: null,
+  requiresPasswordChange: false,
 
   setToken: (token: string) => set({ token }),
   setUser: (user: User) => set({ user }),
@@ -51,65 +40,59 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setError: (error: string | null) => set({ error }),
 
   login: async (username: string, password: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, requiresPasswordChange: false });
     try {
-      console.log('[Auth] Attempting login for user:', username);
       const response = await apiService.login(username, password);
-      console.log('[Auth] Login response received:', response);
-      
-      // Extract from ApiResponse wrapper: response.data.data contains LoginResponse
       const loginData = response.data.data;
-      console.log('[Auth] Login data extracted:', loginData);
-      
+
       if (!loginData || !loginData.token) {
         throw new Error('No token received from server');
       }
-      
-      const token = loginData.token;
-      console.log('[Auth] Token extracted:', token.substring(0, 50) + '...');
 
-      // Decode JWT to extract user info from claims
-      const decodedUser = decodeJWT(token);
-      console.log('[Auth] JWT decoded:', decodedUser);
-      
       const user: User = {
-        id: 0, // Not in JWT claims
-        username: decodedUser.preferred_username || username,
-        email: decodedUser.email || '',
-        firstName: decodedUser.given_name || '',
-        lastName: decodedUser.family_name || '',
+        id: 0,
+        username: loginData.username || username,
+        email: loginData.email || '',
+        firstName: loginData.firstName || '',
+        lastName: loginData.lastName || '',
         isActive: true,
-        roleNames: decodedUser.roles || [],
+        roleNames: loginData.roleNames || [],
         createdAt: '',
         updatedAt: '',
         deletedAt: null,
         isDeleted: false,
       };
-      console.log('[Auth] User object created:', user);
 
-      // Store in Zustand
+      // NOTE: user is auto-synced in the backend — no need to call createUser here
+      const requiresPasswordChange = loginData.requiresPasswordChange === true;
+
       set({
-        token,
+        token: loginData.token,
         user,
         isAuthenticated: true,
+        requiresPasswordChange,
         isLoading: false,
       });
-      console.log('[Auth] State updated - isAuthenticated should be true now');
 
-      // Persist to localStorage
-      storage.set('authToken', token);
+      storage.set('authToken', loginData.token);
       storage.set('user', user);
-      console.log('[Auth] Data persisted to localStorage');
-      
+      storage.set('requiresPasswordChange', requiresPasswordChange);
     } catch (error: any) {
-      console.error('[Auth] Login error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Login failed';
-      console.error('[Auth] Error message:', errorMessage);
-      set({
-        error: errorMessage,
-        isLoading: false,
-        isAuthenticated: false,
-      });
+      set({ error: errorMessage, isLoading: false, isAuthenticated: false });
+      throw error;
+    }
+  },
+
+  changePassword: async (username: string, newPassword: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await apiService.changePassword(username, newPassword);
+      set({ requiresPasswordChange: false, isLoading: false });
+      storage.set('requiresPasswordChange', false);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to change password';
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
@@ -117,33 +100,50 @@ export const useAuthStore = create<AuthStore>((set) => ({
   logout: async () => {
     try {
       await apiService.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch (_) {
+      // non-critical
     } finally {
-      // Clear state
-      set({
-        token: null,
-        user: null,
-        isAuthenticated: false,
-        error: null,
-      });
-
-      // Clear storage
+      set({ token: null, user: null, isAuthenticated: false, error: null, requiresPasswordChange: false });
       storage.remove('authToken');
       storage.remove('user');
+      storage.remove('requiresPasswordChange');
     }
   },
 
   hydrate: () => {
     const token = storage.get('authToken');
     const user = storage.get('user');
+    const requiresPasswordChange = storage.get('requiresPasswordChange') === true;
 
     if (token && user) {
-      set({
-        token,
-        user,
-        isAuthenticated: true,
-      });
+      set({ token, user, isAuthenticated: true, requiresPasswordChange });
+    }
+  },
+
+  refreshUser: async () => {
+    const token = storage.get('authToken');
+    if (!token) return;
+    try {
+      const response = await apiService.getMe(token);
+      const data = response.data.data;
+      if (!data) return;
+      const user: User = {
+        id: 0,
+        username: data.username || '',
+        email: data.email || '',
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        isActive: true,
+        roleNames: data.roleNames || [],
+        createdAt: '',
+        updatedAt: '',
+        deletedAt: null,
+        isDeleted: false,
+      };
+      set({ user });
+      storage.set('user', user);
+    } catch (_) {
+      // silent — stale cache is better than breaking the app
     }
   },
 }));

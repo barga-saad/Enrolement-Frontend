@@ -24,6 +24,7 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  requiresPasswordChange: boolean;
 }
 
 export interface LoginRequest {
@@ -36,6 +37,12 @@ export interface LoginResponse {
   refreshToken: string;
   tokenType: string;
   expiresIn: number;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  roleNames: string[];
+  requiresPasswordChange: boolean;
 }
 
 export interface ApiResponse<T = any> {

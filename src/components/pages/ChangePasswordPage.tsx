@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks';
-import { Lock, Eye, EyeOff, ArrowRight, ShieldCheckIcon, Building2 } from 'lucide-react';
+import { Lock, Eye, EyeOff, ArrowRight, ShieldCheckIcon } from 'lucide-react';
 import { GeometricDecor } from '../common/GeometricDecor';
+import { LanguageToggle } from '../common/LanguageToggle';
+import { useLangStore, t } from '../../utils/langStore';
 import towerImg from '../../../image copy.png';
 
 const ChangePasswordPage = () => {
   const navigate = useNavigate();
   const { user, changePassword, isLoading, error: storeError, isAuthenticated, requiresPasswordChange } = useAuth();
+  const { lang: _lang } = useLangStore(); // Use underscore to suppress unused warning while keeping reactive trigger
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,22 +34,22 @@ const ChangePasswordPage = () => {
     setError('');
 
     if (!newPassword || !confirmPassword) {
-      setError('Please provide your new security credentials.');
+      setError(t('Veuillez fournir vos nouveaux identifiants de sécurité.', 'Please provide your new security credentials.'));
       return;
     }
 
     if (newPassword.length < 8) {
-      setError('Minimum 8-character security threshold required.');
+      setError(t('Seuil de sécurité minimum de 8 caractères requis.', 'Minimum 8-character security threshold required.'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Credentials mismatch. Verify and retry.');
+      setError(t('Incohérence des identifiants. Vérifiez et réessayez.', 'Credentials mismatch. Verify and retry.'));
       return;
     }
 
     try {
-      if (!user) throw new Error('User context lost. Please login again.');
+      if (!user) throw new Error(t('Contexte utilisateur perdu. Veuillez vous reconnecter.', 'User context lost. Please login again.'));
       await changePassword(user.username, newPassword);
       setSuccess(true);
       
@@ -55,13 +58,18 @@ const ChangePasswordPage = () => {
         navigate('/', { replace: true });
       }, 300);
     } catch (err: any) {
-      setError(err.message || 'Verification update failed.');
+      setError(err.message || t('Échec de la mise à jour de la vérification.', 'Verification update failed.'));
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 overflow-hidden relative font-['Inter'] transition-colors duration-500">
       
+      {/* 🌐 LANGUAGE TOGGLE */}
+      <div className="absolute top-8 right-8 z-50 animate-fadeIn">
+        <LanguageToggle />
+      </div>
+
       {/* 🚀 EPIC BACKGROUND: TOWER WITH MODERN FILTERS */}
       <div className="absolute inset-0 z-0">
         <img 
@@ -86,8 +94,8 @@ const ChangePasswordPage = () => {
                 <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30 shadow-2xl shadow-green-500/20 animate-bounce">
                   <ShieldCheckIcon className="w-8 h-8 text-green-400" />
                 </div>
-                <h3 className="text-2xl font-black text-white mb-2">Verified</h3>
-                <p className="text-white/60 text-sm font-medium">Security Key Updated. Accessing Hub…</p>
+                <h3 className="text-2xl font-black text-white mb-2">{t('Vérifié', 'Verified')}</h3>
+                <p className="text-white/60 text-sm font-medium">{t('Clé de Sécurité Mise à Jour. Accès au Hub...', 'Security Key Updated. Accessing Hub...')}</p>
               </div>
             ) : (
               <>
@@ -96,9 +104,9 @@ const ChangePasswordPage = () => {
                      <Lock className="w-6 h-6 text-bcp-orange animate-pulse" />
                   </div>
                   <h1 className="text-2xl font-black text-white tracking-tighter uppercase italic">
-                    Security <span className="animate-shine inline-block">Reset</span>
+                    Security <span className="animate-shine inline-block">{t('Réinitialisation', 'Reset')}</span>
                   </h1>
-                  <p className="text-white/40 font-black uppercase text-[8px] tracking-[0.4em] mt-2">Update Credentials to Proceed</p>
+                  <p className="text-white/40 font-black uppercase text-[8px] tracking-[0.4em] mt-2">{t('Mettre à jour les identifiants pour continuer', 'Update Credentials to Proceed')}</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -115,7 +123,7 @@ const ChangePasswordPage = () => {
                         type={showNew ? 'text' : 'password'}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="New Security Key"
+                        placeholder={t('Nouvelle Clé de Sécurité', 'New Security Key')}
                         className="w-full pl-12 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-bcp-orange/50 transition-all duration-300 font-semibold text-sm text-white placeholder-white/30"
                         autoComplete="new-password"
                       />
@@ -136,7 +144,7 @@ const ChangePasswordPage = () => {
                         type={showConfirm ? 'text' : 'password'}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Confirm Identifier"
+                        placeholder={t('Confirmer l\'Identifiant', 'Confirm Identifier')}
                         className="w-full pl-12 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-bcp-orange/50 transition-all duration-300 font-semibold text-sm text-white placeholder-white/30"
                         autoComplete="new-password"
                       />
@@ -161,7 +169,7 @@ const ChangePasswordPage = () => {
                         <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                       ) : (
                         <>
-                          <span className="uppercase tracking-[0.15em] text-xs font-bold">Synchronize</span>
+                          <span className="uppercase tracking-[0.15em] text-xs font-bold">{t('Synchroniser', 'Synchronize')}</span>
                           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </>
                       )}

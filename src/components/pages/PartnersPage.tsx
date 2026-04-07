@@ -148,10 +148,8 @@ const PartnersPage = () => {
   const isAdmin = user?.roleNames?.some((role) => role === 'PROFIL_ADMIN_CENTRAL') || false;
   const isValidator = user?.roleNames?.some((role) => role === 'PROFIL_VALIDATEUR') || false;
   const isSaisie = user?.roleNames?.some((role) => role === 'PROFIL_SAISIE') || false;
-  const isConsultation = user?.roleNames?.some((role) => role === 'PROFIL_CONSULTATION') || false;
 
   const canCreate = isAdmin || isSaisie;
-  const canValidate = isAdmin || isValidator;
 
   useEffect(() => {
     fetchPartners();

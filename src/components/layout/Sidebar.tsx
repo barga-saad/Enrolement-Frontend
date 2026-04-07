@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Shield, FileText, LogOut, X, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, Shield, FileText, LogOut, X } from 'lucide-react';
 import { useAuth } from '../../hooks';
+import { useLangStore, t } from '../../utils/langStore';
 import logo from '../../../image.png';
 
 interface SidebarProps {
@@ -12,19 +13,20 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, user } = useAuth();
+  const { lang: _lang } = useLangStore(); // Use underscore to suppress unused warning while keeping reactive trigger
 
   const ROLE_LABELS: Record<string, string> = {
-    PROFIL_ADMIN_CENTRAL: 'Admin Central',
-    PROFIL_SAISIE:        'Data Entry',
-    PROFIL_VALIDATEUR:    'Validator',
-    PROFIL_CONSULTATION:  'Consultation',
+    PROFIL_ADMIN_CENTRAL: t('Administrateur Central', 'Central Admin'),
+    PROFIL_SAISIE:        t('Saisie de Données', 'Data Entry'),
+    PROFIL_VALIDATEUR:    t('Validateur', 'Validator'),
+    PROFIL_CONSULTATION:  t('Consultation', 'Consultation'),
   };
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard',  path: '/' },
-    { icon: Users,           label: 'Users',      path: '/users',    requiredRole: 'PROFIL_ADMIN_CENTRAL' },
-    { icon: Shield,          label: 'Roles',      path: '/roles',    requiredRole: 'PROFIL_ADMIN_CENTRAL' },
-    { icon: FileText,        label: 'Partners',   path: '/partners' },
+    { icon: LayoutDashboard, label: t('Tableau de bord', 'Dashboard'),  path: '/' },
+    { icon: Users,           label: t('Utilisateurs', 'Users'),      path: '/users',    requiredRole: 'PROFIL_ADMIN_CENTRAL' },
+    { icon: Shield,          label: t('Rôles', 'Roles'),      path: '/roles',    requiredRole: 'PROFIL_ADMIN_CENTRAL' },
+    { icon: FileText,        label: t('Partenaires', 'Partners'),   path: '/partners' },
   ];
 
   const handleLogout = async () => {
@@ -65,7 +67,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 <h2 className="text-xl font-bold tracking-tight text-bcp-brown dark:text-white">
                   BCP <span className="text-bcp-orange">BANK</span>
                 </h2>
-                <p className="text-[10px] uppercase tracking-widest text-bcp-grey-text dark:text-dark-text-dim font-black">Enrollment Hub</p>
+                <p className="text-[10px] uppercase tracking-widest text-bcp-grey-text dark:text-dark-text-dim font-black">{t('Hub d\'Enrôlement', 'Enrollment Hub')}</p>
               </div>
             </div>
             <button
@@ -81,7 +83,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         {/* Navigation Menu */}
         <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
           <div className="px-4 mb-4">
-            <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Main Menu</p>
+            <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('Menu Principal', 'Main Menu')}</p>
           </div>
           {menuItems.map((item) => {
             if (!canAccess(item.requiredRole)) return null;
@@ -124,7 +126,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 <p className="text-[10px] text-bcp-orange font-bold uppercase tracking-tighter truncate">
                   {user?.roleNames?.length
                     ? (ROLE_LABELS[user.roleNames[0]] ?? user.roleNames[0])
-                    : 'No role assigned'}
+                    : t('Aucun rôle assigné', 'No role assigned')}
                 </p>
               </div>
             </div>
@@ -134,7 +136,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 bg-white dark:bg-dark-bg shadow-sm rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-300 border border-gray-100 dark:border-dark-border font-bold text-xs"
             >
               <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
+              <span>{t('Déconnexion', 'Sign Out')}</span>
             </button>
           </div>
         </div>

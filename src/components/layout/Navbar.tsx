@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, Bell, User, Search, ChevronDown, Settings, LogOut, Shield } from 'lucide-react';
+import { Menu, ChevronDown, Settings, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
+import { LanguageToggle } from '../common/LanguageToggle';
+import { useLangStore, t } from '../../utils/langStore';
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -13,6 +15,7 @@ const Navbar = ({ onMenuClick }: NavbarProps) => {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { lang: _lang } = useLangStore(); // Use underscore to suppress unused warning while keeping reactive trigger
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -32,33 +35,20 @@ const Navbar = ({ onMenuClick }: NavbarProps) => {
   return (
     <nav className="sticky top-0 z-30 bg-white/80 dark:bg-dark-bg/80 backdrop-blur-md border-b border-gray-100 dark:border-dark-border transition-all duration-300">
       <div className="px-6 py-4 flex items-center justify-between">
-        {/* Left: Mobile Menu & Search */}
-        <div className="flex items-center space-x-4 flex-1">
+        {/* Left: Mobile Menu */}
+        <div className="flex items-center flex-1">
           <button
             onClick={onMenuClick}
             className="md:hidden p-2 rounded-xl text-bcp-brown dark:text-dark-text hover:bg-orange-50 dark:hover:bg-dark-bg-soft transition-colors"
           >
             <Menu className="w-6 h-6" />
           </button>
-          
-          <div className="hidden md:flex items-center max-w-md w-full bg-gray-50 dark:bg-dark-bg-soft rounded-2xl px-4 py-2 border border-transparent focus-within:border-bcp-orange/30 transition-all group">
-            <Search className="w-4 h-4 text-gray-400 group-focus-within:text-bcp-orange transition-colors" />
-            <input 
-              type="text" 
-              placeholder="Search anything..." 
-              className="ml-3 bg-transparent border-none outline-none text-sm text-gray-700 dark:text-dark-text w-full"
-            />
-          </div>
         </div>
 
         {/* Right: Actions & Profile */}
         <div className="flex items-center space-x-3 md:space-x-4">
+          <LanguageToggle />
           <ThemeToggle />
-          
-          <button className="relative p-2 rounded-xl text-bcp-brown dark:text-dark-text hover:bg-orange-50 dark:hover:bg-dark-bg-soft transition-colors group">
-            <Bell className="w-5 h-5 group-hover:shake" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-bcp-orange rounded-full border-2 border-white dark:border-dark-bg-soft" />
-          </button>
           
           <div className="h-8 w-[1px] bg-gray-200 dark:bg-dark-border mx-2 hidden sm:block" />
           
@@ -71,7 +61,7 @@ const Navbar = ({ onMenuClick }: NavbarProps) => {
                 <p className="text-xs font-bold text-gray-900 dark:text-white leading-tight">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-[10px] text-gray-400 dark:text-dark-text-dim font-medium">Online</p>
+                <p className="text-[10px] text-gray-400 dark:text-dark-text-dim font-medium">{t('En ligne', 'Online')}</p>
               </div>
               <div className="relative">
                 <div className="w-10 h-10 rounded-2xl bg-bcp-gradient-soft flex items-center justify-center text-bcp-orange font-bold text-sm shadow-sm border border-orange-100 dark:border-bcp-orange/20 transition-transform group-hover:scale-105">
@@ -96,7 +86,7 @@ const Navbar = ({ onMenuClick }: NavbarProps) => {
                     className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-bcp-orange/10 hover:text-bcp-orange transition-colors"
                   >
                     <Settings className="w-4 h-4" />
-                    <span>User Settings</span>
+                    <span>{t('Paramètres utilisateur', 'User Settings')}</span>
                   </button>
                   
                   <button 
@@ -104,7 +94,7 @@ const Navbar = ({ onMenuClick }: NavbarProps) => {
                     className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-bcp-orange/10 hover:text-bcp-orange transition-colors"
                   >
                     <Shield className="w-4 h-4" />
-                    <span>My Permissions</span>
+                    <span>{t('Mes autorisations', 'My Permissions')}</span>
                   </button>
                 </div>
                 
@@ -114,7 +104,7 @@ const Navbar = ({ onMenuClick }: NavbarProps) => {
                     className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
+                    <span>{t('Déconnexion', 'Sign Out')}</span>
                   </button>
                 </div>
               </div>

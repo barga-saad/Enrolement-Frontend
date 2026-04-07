@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 export const ThemeToggle = () => {
@@ -19,7 +19,7 @@ export const ThemeToggle = () => {
   return (
     <button
       onClick={() => setIsDark(!isDark)}
-      className="p-2 rounded-xl bg-gray-100 dark:bg-dark-bg-soft hover:bg-bcp-orange-soft dark:hover:bg-bcp-orange-soft transition-all duration-300 group"
+      className="p-2 rounded-xl bg-warm-200 dark:bg-dark-bg-soft hover:bg-warm-300 dark:hover:bg-bcp-orange-soft transition-all duration-300 group shadow-sm border border-warm-500/10 dark:border-white/5"
       aria-label="Toggle dark mode"
     >
       {isDark ? (

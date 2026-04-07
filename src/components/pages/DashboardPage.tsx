@@ -3,6 +3,7 @@ import { Users, Shield, FileText, TrendingUp, Clock, CheckCircle, ArrowUpRight, 
 import { useToast } from '../../utils/toastStore';
 import { useAuth } from '../../hooks';
 import { apiService } from '../../services/api';
+import { useLangStore, t } from '../../utils/langStore';
 
 interface DashboardStats {
   totalUsers?: number;
@@ -25,6 +26,7 @@ interface RecentActivity {
 const DashboardPage = () => {
   const toast = useToast();
   const { user } = useAuth();
+  const { lang: _lang } = useLangStore();
   const [stats, setStats] = useState<DashboardStats>({});
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,7 @@ const DashboardPage = () => {
             activities.push({
               id: `partner-${index}`,
               type: 'partner',
-              action: 'Partner Profile Created',
+              action: t('Profil Partenaire Créé', 'Partner Profile Created'),
               entity: partner.partnerName || `Partner ${index + 1}`,
               timestamp: new Date(partner.createdAt || Date.now()).toLocaleDateString(),
               status: 'success',
@@ -86,7 +88,7 @@ const DashboardPage = () => {
             activities.push({
               id: `user-${index}`,
               type: 'user',
-              action: 'New User Registered',
+              action: t('Nouvel Utilisateur Enregistré', 'New User Registered'),
               entity: u.username || `User ${index + 1}`,
               timestamp: new Date(u.createdAt || Date.now()).toLocaleDateString(),
               status: u.isActive ? 'success' : 'warning',
@@ -109,7 +111,7 @@ const DashboardPage = () => {
               activities.push({
                 id: `partner-${index}`,
                 type: 'partner',
-                action: 'Partner Review',
+                action: t('Révision Partenaire', 'Partner Review'),
                 entity: partner.partnerName || `Partner ${index + 1}`,
                 timestamp: new Date(partner.createdAt || Date.now()).toLocaleDateString(),
                 status: 'success',
@@ -123,17 +125,17 @@ const DashboardPage = () => {
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);
-      toast.error('Failed to sync dashboard metrics');
+      toast.error(t('Échec de la synchronisation des métriques', 'Failed to sync dashboard metrics'));
     } finally {
       setLoading(false);
     }
   };
 
   const ROLE_LABELS: Record<string, string> = {
-    PROFIL_ADMIN_CENTRAL: 'Admin Central',
-    PROFIL_SAISIE: 'Saisie',
-    PROFIL_VALIDATEUR: 'Validateur',
-    PROFIL_CONSULTATION: 'Consultation',
+    PROFIL_ADMIN_CENTRAL: t('Admin Central', 'Central Admin'),
+    PROFIL_SAISIE: t('Saisie', 'Data Entry'),
+    PROFIL_VALIDATEUR: t('Validateur', 'Validator'),
+    PROFIL_CONSULTATION: t('Consultation', 'Consultation'),
   };
 
   const StatCard = ({ icon: Icon, label, value, color, trend }: any) => (
@@ -187,14 +189,14 @@ const DashboardPage = () => {
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Overview</h1>
+              <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{t('Vue d\'ensemble', 'Overview')}</h1>
               <span className="px-3 py-1 bg-bcp-orange/10 text-bcp-orange text-[10px] font-black uppercase tracking-widest rounded-full border border-bcp-orange/20">
                 {ROLE_LABELS[user?.roleNames?.[0] || ''] || user?.roleNames?.[0]}
               </span>
             </div>
             <p className="text-gray-500 dark:text-dark-text-dim text-sm font-medium mt-0.5 flex items-center">
               <Calendar className="w-4 h-4 mr-1.5" />
-              Efficiency analytics for {user?.firstName || 'User'}
+              {t('Analyses d\'efficacité pour', 'Efficiency analytics for')} {user?.firstName || 'User'}
             </p>
           </div>
         </div>
@@ -205,7 +207,7 @@ const DashboardPage = () => {
             className="px-4 py-2 bg-white dark:bg-dark-bg-soft border border-gray-100 dark:border-dark-border rounded-xl text-xs font-bold text-gray-600 dark:text-dark-text-dim hover:border-bcp-orange transition-all flex items-center space-x-2 shadow-sm"
           >
             <Activity className="w-3.5 h-3.5" />
-            <span>Refresh Sync</span>
+            <span>{t('Actualiser Sync', 'Refresh Sync')}</span>
           </button>
         </div>
       </div>
@@ -214,41 +216,41 @@ const DashboardPage = () => {
       <div className={`grid gap-6 ${isAdmin ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
         {isAdmin && (
           <>
-            <StatCard icon={Users} label="Global Users" value={stats.totalUsers} color="text-blue-600" trend="+12%" />
-            <StatCard icon={CheckCircle} label="Active Users" value={stats.activeUsers} color="text-green-600" trend="+8%" />
-            <StatCard icon={Shield} label="Custom Roles" value={stats.activeRoles} color="text-purple-600" />
+            <StatCard icon={Users} label={t('Utilisateurs Globaux', 'Global Users')} value={stats.totalUsers} color="text-blue-600" trend="+12%" />
+            <StatCard icon={CheckCircle} label={t('Utilisateurs Actifs', 'Active Users')} value={stats.activeUsers} color="text-green-600" trend="+8%" />
+            <StatCard icon={Shield} label={t('Rôles Personnalisés', 'Custom Roles')} value={stats.activeRoles} color="text-purple-600" />
           </>
         )}
-        <StatCard icon={FileText} label="Registered Partners" value={stats.totalPartners} color="text-indigo-600" trend="+15%" />
-        <StatCard icon={Clock} label="Awaiting Approval" value={stats.pendingApprovals} color="text-amber-600" />
-        {isAdmin && <StatCard icon={Shield} label="System Permissions" value={stats.totalPermissions} color="text-cyan-600" />}
+        <StatCard icon={FileText} label={t('Partenaires Enregistrés', 'Registered Partners')} value={stats.totalPartners} color="text-indigo-600" trend="+15%" />
+        <StatCard icon={Clock} label={t('En Attente d\'Approbation', 'Awaiting Approval')} value={stats.pendingApprovals} color="text-amber-600" />
+        {isAdmin && <StatCard icon={Shield} label={t('Permissions Système', 'System Permissions')} value={stats.totalPermissions} color="text-cyan-600" />}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         {/* Recent Activity Section */}
-        <div className="lg:col-span-2 card-base overflow-hidden flex flex-col">
+        <div className="card-base overflow-hidden flex flex-col">
           <div className="bg-gray-50/50 dark:bg-white/5 p-6 border-b border-gray-100 dark:border-dark-border flex items-center justify-between">
             <div>
               <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
-                {isAdmin ? 'System Pulse' : 'Your Managed Partners'}
+                {isAdmin ? t('Pulse du Système', 'System Pulse') : t('Vos Partenaires Gérés', 'Your Managed Partners')}
               </h2>
-              <p className="text-gray-500 dark:text-dark-text-dim text-xs font-medium">Real-time status updates</p>
+              <p className="text-gray-500 dark:text-dark-text-dim text-xs font-medium">{t('Mises à jour en temps réel', 'Real-time status updates')}</p>
             </div>
-            <button className="text-[10px] font-black text-bcp-orange uppercase tracking-widest hover:underline">View All</button>
+            <button className="text-[10px] font-black text-bcp-orange uppercase tracking-widest hover:underline">{t('Tout Voir', 'View All')}</button>
           </div>
 
           <div className="flex-1 divide-y divide-gray-100 dark:divide-dark-border">
             {loading ? (
               <div className="p-12 text-center">
                 <div className="w-10 h-10 border-4 border-bcp-orange/20 border-t-bcp-orange rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-400 text-sm font-medium">Synchronizing system data...</p>
+                <p className="text-gray-400 text-sm font-medium">{t('Synchronisation des données...', 'Synchronizing system data...')}</p>
               </div>
             ) : recentActivity.length === 0 ? (
               <div className="p-12 text-center text-gray-500">
                 <div className="w-20 h-20 bg-gray-50 dark:bg-dark-bg-soft rounded-full flex items-center justify-center mx-auto mb-6">
                   <TrendingUp size={32} className="opacity-20" />
                 </div>
-                <p className="font-bold text-gray-400">{isAdmin ? 'No pulse detected yet' : 'Ready to start enrolling partners'}</p>
+                <p className="font-bold text-gray-400">{isAdmin ? t('Aucun signal détecté', 'No pulse detected yet') : t('Prêt à enrôler des partenaires', 'Ready to start enrolling partners')}</p>
               </div>
             ) : (
               recentActivity.map((activity) => (
@@ -276,49 +278,6 @@ const DashboardPage = () => {
                 </div>
               ))
             )}
-          </div>
-        </div>
-
-        {/* Right Info Sidebar */}
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-bcp-brown to-bcp-brown-dark rounded-[2rem] p-8 text-white relative overflow-hidden group shadow-xl shadow-bcp-brown-dark/20">
-            <div className="absolute top-[-20%] right-[-20%] w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
-            
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
-                <Shield className="text-white w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-black mb-3">Professional Security</h3>
-              <p className="text-white/70 text-sm leading-relaxed mb-6 font-medium">
-                {isAdmin 
-                  ? 'System-wide administrative privileges active. Handle user permissions with enterprise security standards.'
-                  : `Authenticated as ${ROLE_LABELS[user?.roleNames?.[0] || ''] || user?.roleNames?.[0]}. Compliance monitoring is enabled for all partner interactions.`}
-              </p>
-              <button className="w-full py-3 bg-white text-bcp-brown rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform">
-                Read Guidelines
-              </button>
-            </div>
-          </div>
-
-          <div className="card-base p-6 border-b-4 border-b-bcp-orange">
-            <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest mb-4">Quick Stats</h4>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-500 dark:text-dark-text-dim">Platform Uptime</span>
-                <span className="text-xs font-black text-green-500 tracking-tighter">99.98%</span>
-              </div>
-              <div className="w-full bg-gray-100 dark:bg-dark-bg-soft h-2 rounded-full overflow-hidden">
-                <div className="bg-green-500 h-full w-[99.98%]" />
-              </div>
-              
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-xs font-bold text-gray-500 dark:text-dark-text-dim">Storage Capacity</span>
-                <span className="text-xs font-black text-bcp-orange tracking-tighter">42.5 GB / 50 GB</span>
-              </div>
-              <div className="w-full bg-gray-100 dark:bg-dark-bg-soft h-2 rounded-full overflow-hidden">
-                <div className="bg-bcp-orange h-full w-[85%]" />
-              </div>
-            </div>
           </div>
         </div>
       </div>

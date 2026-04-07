@@ -65,10 +65,10 @@ select {
 
 /* Glassmorphism effect */
 .glass-morphism {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(245, 241, 235, 0.6); /* Warm neutral (#F5F1EB) */
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  border: 1px solid rgba(139, 115, 91, 0.15); /* Soft brown border */
 }
 
 .dark .glass-morphism {
@@ -76,14 +76,20 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.glass-warm {
+  background: rgba(253, 252, 251, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(176, 152, 126, 0.2);
+}
+
 /* Card base styles */
 .card-base {
-  @apply bg-white dark:bg-dark-bg-card rounded-2xl shadow-bcp-card border border-gray-100 dark:border-dark-border;
+  @apply bg-warm-200 dark:bg-dark-bg-card rounded-2xl shadow-bcp-card border border-warm-300 dark:border-dark-border;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-base:hover {
-  @apply shadow-bcp-hover -translate-y-1;
+  @apply shadow-bcp-hover -translate-y-1 border-bcp-orange/20;
 }
 
 /* Button base styles */
@@ -111,8 +117,8 @@ select {
 
 /* Premium Form Input */
 .premium-input {
-  @apply w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-bg-soft 
-         focus:ring-2 focus:ring-bcp-orange focus:border-transparent outline-none transition-all duration-200;
+  @apply w-full px-4 py-3 rounded-xl border border-warm-300 dark:border-dark-border bg-white/80 dark:bg-dark-bg-soft 
+         focus:ring-2 focus:ring-bcp-orange focus:border-transparent outline-none transition-all duration-200 text-bcp-brown dark:text-white;
 }
 
 /* BCP Gradient backgrounds */
@@ -141,7 +147,7 @@ select {
 
 /* Polygonal shapes utilities (Image 1 inspired) */
 .bcp-geometric-shape {
-  @apply absolute pointer-events-none opacity-[0.12] dark:opacity-[0.08];
+  @apply absolute pointer-events-none opacity-[0.15] dark:opacity-[0.1];
   filter: blur(1px);
 }
 
@@ -182,10 +188,10 @@ select {
 .bcp-tower-overlay {
   background: linear-gradient(
     135deg,
-    rgba(20, 20, 20, 0.4) 0%,
-    rgba(107, 76, 58, 0.3) 100%
+    rgba(245, 241, 235, 0.3) 0%, /* Warm Light Overlay */
+    rgba(107, 76, 58, 0.2) 100%
   );
-  backdrop-filter: saturate(1.2) blur(1px);
+  backdrop-filter: saturate(1.1) contrast(1.1);
 }
 
 .dark .bcp-tower-overlay {

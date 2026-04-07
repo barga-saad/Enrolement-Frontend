@@ -36,6 +36,16 @@ export default {
           warning: '#F59E0B',
           error: '#EF4444',
           info: '#3B82F6',
+        },
+        // Warm palette for premium light theme
+        'warm': {
+          '50': '#FDFCFB',
+          '100': '#F9F7F4',
+          '200': '#F5F1EB', // Main card background (Light Theme)
+          '300': '#EBE4DA',
+          '400': '#D6C7B3',
+          '500': '#B0987E',
+          '600': '#8B735B', // Text/Borders in Light Theme
         }
       },
       backgroundImage: {

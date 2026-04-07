@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Users Management Page
  * Manage users and assign roles
  */
@@ -288,8 +288,9 @@ export default function UsersPage() {
         {/* Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center h-48">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bcp-orange"></div>
+            <div className="flex flex-col items-center justify-center h-[400px] space-y-4 animate-fadeIn">
+              <div className="w-12 h-12 border-4 border-bcp-orange/20 border-t-bcp-orange rounded-full animate-spin" />
+              <p className="text-[10px] font-black uppercase text-gray-400 tracking-[0.3em]">Synchronizing Registry</p>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="p-12 text-center text-gray-400">No users found</div>

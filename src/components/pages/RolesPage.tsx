@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Roles Management Page
  * View roles and their permissions
  */
@@ -80,8 +80,17 @@ export default function RolesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-bcp-orange"></div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6 animate-fadeIn">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-bcp-orange/20 border-t-bcp-orange rounded-2xl animate-spin" />
+          <Shield className="absolute inset-0 m-auto w-6 h-6 text-bcp-orange/40" />
+        </div>
+        <div className="text-center space-y-2">
+          <p className="text-[10px] font-black uppercase text-gray-400 tracking-[0.3em]">Governance Sync</p>
+          <div className="w-24 h-1 bg-gray-100 dark:bg-dark-bg-soft rounded-full overflow-hidden">
+            <div className="bg-bcp-orange h-full w-full animate-[progress_2s_infinite]" />
+          </div>
+        </div>
       </div>
     );
   }

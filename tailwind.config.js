@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -12,12 +13,22 @@ export default {
           orange: '#FF9900',      // Primary BCP Orange
           'orange-light': '#FFB84D',
           'orange-dark': '#FF8800',
+          'orange-soft': 'rgba(255, 153, 0, 0.1)',
           brown: '#6B4C3A',       // Secondary Brown
           'brown-light': '#8B6F63',
           'brown-dark': '#4A3728',
           grey: '#F5F5F5',        // Light Grey Background
           'grey-dark': '#E8E8E8',
           'grey-text': '#666666',
+        },
+        // Dark Mode specific colors
+        'dark': {
+          bg: '#121212',
+          'bg-soft': '#1E1E1E',
+          'bg-card': '#252525',
+          text: '#F5F5F5',
+          'text-dim': '#A0A0A0',
+          border: '#333333',
         },
         // Status colors
         'status': {

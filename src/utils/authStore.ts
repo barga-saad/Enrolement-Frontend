@@ -102,10 +102,41 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       await apiService.changePassword(username, newPassword);
-      set({ requiresPasswordChange: false, isLoading: false });
+      // Auto-login to get the proper token after password change
+      const response = await apiService.login(username, newPassword);
+      const loginData = response.data.data;
+      
+      if (!loginData || !loginData.token) {
+        throw new Error('Verification failed after password change. Please log in manually.');
+      }
+
+      const user: User = {
+        id: 0,
+        username: loginData?.username || username,
+        email: loginData?.email || '',
+        firstName: loginData?.firstName || '',
+        lastName: loginData?.lastName || '',
+        isActive: true,
+        roleNames: loginData?.roleNames || [],
+        createdAt: '',
+        updatedAt: '',
+        deletedAt: null,
+        isDeleted: false,
+      };
+
+      set({ 
+        token: loginData.token, 
+        user, 
+        isAuthenticated: true, 
+        requiresPasswordChange: false, 
+        isLoading: false 
+      });
+
+      storage.set('authToken', loginData.token);
+      storage.set('user', user);
       storage.set('requiresPasswordChange', false);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to change password';
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update access credentials';
       set({ error: errorMessage, isLoading: false });
       throw error;
     }

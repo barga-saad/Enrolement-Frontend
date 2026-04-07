@@ -42,97 +42,100 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 overflow-hidden relative font-['Inter']">
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 overflow-hidden relative font-['Inter'] transition-colors duration-500">
 
       {/* 🚀 EPIC BACKGROUND: TOWER WITH MODERN FILTERS */}
       <div className="absolute inset-0 z-0">
         <img
           src={towerImg}
           alt="BCP Tower"
-          className="w-full h-full object-cover brightness-[0.45] saturate-[1.2] contrast-[1.1] scale-105 transition-transform duration-[20s] animate-pulse-soft"
+          className="w-full h-full object-cover brightness-[0.8] saturate-[1.4] contrast-[1.1] scale-105 transition-transform duration-[20s] animate-float-slow"
         />
         <div className="absolute inset-0 bcp-tower-overlay" />
+
+        {/* Dynamic Floating Shapes Layer */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="bcp-geometric-shape triangle-up w-64 h-64 bg-bcp-orange -top-20 -left-20 animate-spin-slow" />
+          <div className="bcp-geometric-shape diamond w-40 h-40 bg-bcp-brown top-1/4 -right-10 animate-float" />
+          <div className="bcp-geometric-shape triangle-down w-32 h-32 bg-bcp-orange bottom-10 left-1/4 animate-pulse-soft" />
+          <div className="bcp-geometric-shape diamond w-24 h-24 bg-white/20 bottom-1/4 right-1/4 animate-float-slow" />
+        </div>
       </div>
 
-      {/* 💎 GEOMETRIC DECOR (TRIANGLES INSPIRED BY IMAGE 1) */}
+      {/* 💎 GEOMETRIC DECOR */}
       <GeometricDecor />
-      <div className="w-full max-w-[900px] min-h-[500px] flex rounded-[2.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.6)] overflow-hidden relative z-10 mx-6 bg-transparent backdrop-blur-md border border-white/10 transition-all duration-700 animate-slideUp">
+      <div className="w-full max-w-[900px] min-h-[500px] flex rounded-[2.5rem] shadow-[0_45px_90px_-20px_rgba(0,0,0,0.7)] overflow-hidden relative z-10 mx-6 bg-transparent backdrop-blur-md border border-white/10 transition-all duration-700 animate-slideUp">
 
-        {/* 🏢 LEFT SIDE: BRANDED GLASS HUB (Centered Content) */}
+        {/* 🏢 LEFT SIDE: BRANDED HUB */}
         <div className="hidden lg:flex flex-1 flex-col justify-center items-center text-center p-12 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-bcp-brown/90 to-transparent opacity-80" />
-          
-          {/* Animated Background Element */}
-          <div className="absolute -top-10 -left-10 w-40 h-40 bg-bcp-orange/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute inset-0 bg-gradient-to-br from-bcp-brown/80 to-transparent opacity-80" />
 
           <div className="relative z-10 space-y-8">
-            <div className="inline-flex w-16 h-16 bg-white/10 backdrop-blur-2xl rounded-2xl items-center justify-center border border-white/20 shadow-xl mx-auto">
+            <div className="inline-flex w-16 h-16 bg-white/10 backdrop-blur-2xl rounded-2xl items-center justify-center border border-white/20 shadow-xl mx-auto animate-bounce-soft">
               <Building2 className="w-8 h-8 text-white" />
             </div>
             <div className="space-y-4">
               <h2 className="text-3xl font-black text-white leading-tight tracking-tighter">
                 The Next Era of <br />
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-bcp-orange to-white">Enrollment</span>
+                <span className="animate-shine inline-block">Enrollment</span>
               </h2>
               <div className="w-16 h-1.5 bg-bcp-orange rounded-full mx-auto" />
-              <p className="text-white/70 text-base leading-relaxed max-w-[280px] font-medium mx-auto">
-                Enterprise security meets Moroccan heritage. Unified partner management.
+              <p className="text-white/70 text-base leading-relaxed max-w-[280px] font-medium mx-auto italic">
+                Enterprise security meets Moroccan heritage.
               </p>
             </div>
 
-            <div className="inline-flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10">
+            <div className="inline-flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-500">
               <div className="w-10 h-10 bg-bcp-orange rounded-xl flex items-center justify-center shadow-lg">
                 <ShieldCheck className="w-5 h-5 text-white" />
               </div>
               <div className="text-left">
-                <p className="text-white font-bold text-xs">Secure Access</p>
-                <p className="text-white/40 text-[10px]">© 2026 BCP Bank Morocco</p>
+                <p className="text-white font-bold text-xs uppercase tracking-widest">Secure Access</p>
+                <p className="text-white/40 text-[10px]">© BCP Bank Morocco</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 🛂 RIGHT SIDE: THE LOGIN VAULT (Always Centered Content) */}
-        <div className="flex-[0.9] p-8 md:p-12 bg-white/10 dark:bg-black/40 backdrop-blur-3xl flex flex-col justify-center items-center relative overflow-hidden text-white">
-          
+        {/* 🛂 RIGHT SIDE: THE LOGIN VAULT */}
+        <div className="flex-[0.9] p-8 md:p-12 bg-white/5 dark:bg-black/60 backdrop-blur-3xl flex flex-col justify-center items-center relative overflow-hidden text-white border-l border-white/5">
+
           {/* Subtle geometric accents */}
           <div className="absolute top-0 right-0 p-12 opacity-[0.2] pointer-events-none">
-            <div className="w-48 h-48 border-[30px] border-bcp-orange rounded-full" />
+            <div className="w-48 h-48 border-[30px] border-bcp-orange rounded-full animate-spin-slow" />
           </div>
 
           <div className="w-full max-w-[320px] relative z-10">
             <div className="mb-10 text-center flex flex-col items-center">
               <div className="mb-6">
                 <div className="relative inline-block animate-float">
-                   <div className="absolute inset-0 bg-bcp-orange/40 blur-3xl rounded-full scale-[2] animate-pulse-soft" />
-                   <img
-                     src={logo}
-                     alt="BCP Logo"
-                     className="h-16 relative z-10 object-contain hover:scale-110 transition-transform cursor-pointer drop-shadow-2xl brightness-0 invert"
-                   />
+                  <div className="absolute inset-0 bg-bcp-orange/40 blur-3xl rounded-full scale-[2] animate-pulse-soft" />
+                  <img
+                    src={logo}
+                    alt="BCP Logo"
+                    className="h-16 relative z-10 object-contain hover:scale-110 transition-transform cursor-pointer drop-shadow-2xl brightness-0 invert"
+                  />
                 </div>
               </div>
               <div className="space-y-1">
                 <h1 className="text-3xl font-black text-white tracking-tighter uppercase italic">
-                  Enrolment <span className="text-bcp-orange">Portal</span>
+                  Enrolment <span className="animate-shine inline-block">Portal</span>
                 </h1>
                 <div className="flex items-center justify-center space-x-2">
                   <div className="h-[1px] w-8 bg-bcp-orange/50" />
-                  <p className="text-white/60 font-black uppercase text-[8px] tracking-[0.4em]">Verified Authentication Port</p>
+                  <p className="text-white/60 font-black uppercase text-[8px] tracking-[0.4em]">Verified Access</p>
                   <div className="h-[1px] w-8 bg-bcp-orange/50" />
                 </div>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Error Message */}
               {(error || authError) && (
                 <div className="bg-red-500/20 border-l-4 border-red-500 text-white rounded-lg p-3 text-xs font-bold flex items-center animate-shake backdrop-blur-md">
                   {error || authError}
                 </div>
               )}
 
-              {/* Account ID */}
               <div className="space-y-2 group">
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/50 transition-colors group-focus-within:text-bcp-orange" />
@@ -141,13 +144,12 @@ const LoginPage = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Professional Identifier"
-                    className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-bcp-orange/50 transition-all duration-300 font-semibold text-sm text-white placeholder-white/40"
+                    className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-bcp-orange/50 transition-all duration-300 font-semibold text-sm text-white placeholder-white/30"
                     disabled={isLoading}
                   />
                 </div>
               </div>
 
-              {/* Security Code */}
               <div className="space-y-2 group">
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/50 transition-colors group-focus-within:text-bcp-orange" />
@@ -156,7 +158,7 @@ const LoginPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Security Code"
-                    className="w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-bcp-orange/50 transition-all duration-300 font-semibold text-sm text-white placeholder-white/40"
+                    className="w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-bcp-orange/50 transition-all duration-300 font-semibold text-sm text-white placeholder-white/30"
                     disabled={isLoading}
                   />
                   <button
@@ -169,7 +171,6 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              {/* Login Button */}
               <button
                 type="submit"
                 disabled={isLoading}
@@ -180,11 +181,11 @@ const LoginPage = () => {
                   {isLoading ? (
                     <>
                       <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span className="uppercase tracking-[0.15em] text-xs">Authenticating...</span>
+                      <span className="uppercase tracking-[0.15em] text-xs">Decrypting...</span>
                     </>
                   ) : (
                     <>
-                      <span className="uppercase tracking-[0.15em] text-xs">Access Hub</span>
+                      <span className="uppercase tracking-[0.15em] text-xs font-bold">Access</span>
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
                     </>
                   )}
@@ -192,9 +193,11 @@ const LoginPage = () => {
               </button>
             </form>
 
-            <footer className="mt-12 text-center text-[9px] uppercase tracking-widest font-black text-white/40">
-              Gateway MOROCCO BCP
-            </footer>
+            <div className="mt-10">
+              <footer className="text-[9px] uppercase tracking-widest font-black text-white/40 text-center">
+                BANQUE CENTRALE POPULAIRE
+              </footer>
+            </div>
           </div>
         </div>
       </div>
@@ -203,4 +206,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-

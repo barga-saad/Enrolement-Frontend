@@ -14,7 +14,7 @@ interface Partner {
   name: string;
   partnerReferenceNumber: string;
   partnerType: string;
-  partnerStatus: boolean;
+  partnerStatus: string;
   headquarterCountry: string;
   parentCompanyCountry?: string;
   classification: string;
@@ -32,55 +32,67 @@ interface Partner {
   limitCashPickupTransfer: number;
   limitMassCashPickupTransfer: number;
   limitWalletTransfer: number;
-  natureMassCashPickupTransfer: string;
+  natureMassCashPickupTransfer: number;
   validDaysMassCashPickupTransfer: number;
   mainCurrency: string;
   exchangeRateNature?: string;
   exchangeGainPercentage?: number;
   subscriptionFee?: number;
   subscriptionPeriodicity?: string;
-  subscriptionBillingAccount?: string;
+  subscriptionBillingAccount?: number;
   paymentNature: string;
   feeMode?: string;
   monthlyBilling?: boolean;
   immediateDebit?: boolean;
-  reimbursement?: string;
+  reimbursement?: boolean;
   commissionCurrency: string;
   commissionTypeInstantInternal: string;
   commissionAmountInstantInternal: number;
   commissionRateInstantInternal: number;
+  commissionMinInstantInternal?: number;
+  commissionMaxInstantInternal?: number;
   commissionTypeInstantExternal: string;
   commissionAmountInstantExternal: number;
   commissionRateInstantExternal: number;
+  commissionMinInstantExternal?: number;
+  commissionMaxInstantExternal?: number;
   commissionTypeStandardExternal: string;
   commissionAmountStandardExternal: number;
   commissionRateStandardExternal: number;
+  commissionMinStandardExternal?: number;
+  commissionMaxStandardExternal?: number;
   commissionTypeCashPickup: string;
   commissionAmountCashPickup: number;
   commissionRateCashPickup: number;
+  commissionMinCashPickup?: number;
+  commissionMaxCashPickup?: number;
   commissionTypeMassCashPickup: string;
   commissionAmountMassCashPickup: number;
   commissionRateMassCashPickup: number;
+  commissionMinMassCashPickup?: number;
+  commissionMaxMassCashPickup?: number;
   commissionTypeWallet: string;
   commissionAmountWallet: number;
   commissionRateWallet: number;
+  commissionMinWallet?: number;
+  commissionMaxWallet?: number;
 }
 
 // Transfer type config for the table
 const TRANSFER_TYPES = [
-  { label: 'Virement instantané intra BP', allowedKey: 'allowedInternalInstantTransfer', limitKey: 'limitInternalInstantTransfer', commTypeKey: 'commissionTypeInstantInternal', commAmountKey: 'commissionAmountInstantInternal', commRateKey: 'commissionRateInstantInternal' },
-  { label: 'Virement instantané confrère', allowedKey: 'allowedExternalInstantTransfer', limitKey: 'limitExternalInstantTransfer', commTypeKey: 'commissionTypeInstantExternal', commAmountKey: 'commissionAmountInstantExternal', commRateKey: 'commissionRateInstantExternal' },
-  { label: 'Virement standard confrère', allowedKey: 'allowedStandardTransfer', limitKey: 'limitStandardTransfer', commTypeKey: 'commissionTypeStandardExternal', commAmountKey: 'commissionAmountStandardExternal', commRateKey: 'commissionRateStandardExternal' },
-  { label: 'Mise à disposition unitaire', allowedKey: 'allowedCashPickupTransfer', limitKey: 'limitCashPickupTransfer', commTypeKey: 'commissionTypeCashPickup', commAmountKey: 'commissionAmountCashPickup', commRateKey: 'commissionRateCashPickup' },
-  { label: 'Mise à disposition de masse', allowedKey: 'allowedMassCashPickupTransfer', limitKey: 'limitMassCashPickupTransfer', commTypeKey: 'commissionTypeMassCashPickup', commAmountKey: 'commissionAmountMassCashPickup', commRateKey: 'commissionRateMassCashPickup' },
-  { label: 'Transfert Wallet', allowedKey: 'allowedWalletTransfer', limitKey: 'limitWalletTransfer', commTypeKey: 'commissionTypeWallet', commAmountKey: 'commissionAmountWallet', commRateKey: 'commissionRateWallet' },
+  { label: 'Virement instantané intra BP', allowedKey: 'allowedInternalInstantTransfer', limitKey: 'limitInternalInstantTransfer', commTypeKey: 'commissionTypeInstantInternal', commAmountKey: 'commissionAmountInstantInternal', commRateKey: 'commissionRateInstantInternal', commMinKey: 'commissionMinInstantInternal', commMaxKey: 'commissionMaxInstantInternal' },
+  { label: 'Virement instantané confrère', allowedKey: 'allowedExternalInstantTransfer', limitKey: 'limitExternalInstantTransfer', commTypeKey: 'commissionTypeInstantExternal', commAmountKey: 'commissionAmountInstantExternal', commRateKey: 'commissionRateInstantExternal', commMinKey: 'commissionMinInstantExternal', commMaxKey: 'commissionMaxInstantExternal' },
+  { label: 'Virement standard confrère', allowedKey: 'allowedStandardTransfer', limitKey: 'limitStandardTransfer', commTypeKey: 'commissionTypeStandardExternal', commAmountKey: 'commissionAmountStandardExternal', commRateKey: 'commissionRateStandardExternal', commMinKey: 'commissionMinStandardExternal', commMaxKey: 'commissionMaxStandardExternal' },
+  { label: 'Mise à disposition unitaire', allowedKey: 'allowedCashPickupTransfer', limitKey: 'limitCashPickupTransfer', commTypeKey: 'commissionTypeCashPickup', commAmountKey: 'commissionAmountCashPickup', commRateKey: 'commissionRateCashPickup', commMinKey: 'commissionMinCashPickup', commMaxKey: 'commissionMaxCashPickup' },
+  { label: 'Mise à disposition de masse', allowedKey: 'allowedMassCashPickupTransfer', limitKey: 'limitMassCashPickupTransfer', commTypeKey: 'commissionTypeMassCashPickup', commAmountKey: 'commissionAmountMassCashPickup', commRateKey: 'commissionRateMassCashPickup', commMinKey: 'commissionMinMassCashPickup', commMaxKey: 'commissionMaxMassCashPickup' },
+  { label: 'Transfert Wallet', allowedKey: 'allowedWalletTransfer', limitKey: 'limitWalletTransfer', commTypeKey: 'commissionTypeWallet', commAmountKey: 'commissionAmountWallet', commRateKey: 'commissionRateWallet', commMinKey: 'commissionMinWallet', commMaxKey: 'commissionMaxWallet' },
 ] as const;
 
 const DEFAULT_FORM: Partial<Partner> = {
   name: '',
   partnerReferenceNumber: '',
   partnerType: 'Partenaire',
-  partnerStatus: true,
+  partnerStatus: 'ACTIVE',
   headquarterCountry: 'MA',
   parentCompanyCountry: '',
   classification: 'Medium',
@@ -98,19 +110,19 @@ const DEFAULT_FORM: Partial<Partner> = {
   limitCashPickupTransfer: 0,
   limitMassCashPickupTransfer: 0,
   limitWalletTransfer: 0,
-  natureMassCashPickupTransfer: '0',
+  natureMassCashPickupTransfer: 0,
   validDaysMassCashPickupTransfer: 0,
   mainCurrency: 'MAD',
   exchangeRateNature: '0',
   exchangeGainPercentage: 0,
   subscriptionFee: 0,
   subscriptionPeriodicity: '',
-  subscriptionBillingAccount: '',
+  subscriptionBillingAccount: 0,
   paymentNature: 'Post-paiement',
   feeMode: '',
   monthlyBilling: false,
   immediateDebit: false,
-  reimbursement: '',
+  reimbursement: false,
   commissionCurrency: 'MAD',
   commissionTypeInstantInternal: 'Flat',
   commissionAmountInstantInternal: 0,
@@ -231,13 +243,13 @@ const PartnersPage = () => {
     {
       key: 'partnerStatus' as any,
       header: 'Status',
-      render: (status: boolean) => (
+      render: (status: string) => (
         <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
-          status
+          status === 'ACTIVE'
             ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'
             : 'bg-gray-50 text-gray-600 border-gray-100 dark:bg-gray-500/10 dark:text-gray-400 dark:border-gray-500/20'
         }`}>
-          {status ? 'Active' : 'Inactive'}
+          {status === 'ACTIVE' ? 'Active' : 'Inactive'}
         </span>
       ),
     },
@@ -355,11 +367,11 @@ const PartnersPage = () => {
                 <FormSelect
                   label="Status"
                   required
-                  value={formData.partnerStatus ? 'true' : 'false'}
-                  onChange={(e) => updateForm('partnerStatus', e.target.value === 'true')}
+                  value={formData.partnerStatus || 'ACTIVE'}
+                  onChange={(e) => updateForm('partnerStatus', e.target.value)}
                   options={[
-                    { value: 'true', label: 'Active' },
-                    { value: 'false', label: 'Inactive' },
+                    { value: 'ACTIVE', label: 'Active' },
+                    { value: 'INACTIVE', label: 'Inactive' },
                   ]}
                 />
               </div>
@@ -527,8 +539,9 @@ const PartnersPage = () => {
               <div className="grid grid-cols-2 gap-4">
                 <FormInput
                   label="Nature"
-                  value={formData.natureMassCashPickupTransfer || '0'}
-                  onChange={(e) => updateForm('natureMassCashPickupTransfer', e.target.value)}
+                  type="number"
+                  value={String(formData.natureMassCashPickupTransfer || 0)}
+                  onChange={(e) => updateForm('natureMassCashPickupTransfer', parseFloat(e.target.value) || 0)}
                   placeholder="0"
                 />
                 <FormInput
@@ -551,6 +564,8 @@ const PartnersPage = () => {
                     <th className="px-5 py-4 text-center font-bold text-xs uppercase tracking-widest text-gray-400">Commission Type</th>
                     <th className="px-5 py-4 text-right font-bold text-xs uppercase tracking-widest text-gray-400">Amount</th>
                     <th className="px-5 py-4 text-right font-bold text-xs uppercase tracking-widest text-gray-400">Rate (%)</th>
+                    <th className="px-5 py-4 text-right font-bold text-xs uppercase tracking-widest text-gray-400">Min</th>
+                    <th className="px-5 py-4 text-right font-bold text-xs uppercase tracking-widest text-gray-400">Max</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-dark-border">
@@ -585,6 +600,26 @@ const PartnersPage = () => {
                           value={(formData as any)[tt.commRateKey] || 0}
                           onChange={(e) => updateForm(tt.commRateKey, parseFloat(e.target.value) || 0)}
                           className="w-28 text-right bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl px-3 py-2 font-bold focus:ring-bcp-orange/20 focus:border-bcp-orange transition-all"
+                        />
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={(formData as any)[tt.commMinKey] || ''}
+                          onChange={(e) => updateForm(tt.commMinKey, e.target.value ? parseFloat(e.target.value) : undefined)}
+                          placeholder="—"
+                          className="w-24 text-right bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl px-3 py-2 font-bold focus:ring-bcp-orange/20 focus:border-bcp-orange transition-all"
+                        />
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={(formData as any)[tt.commMaxKey] || ''}
+                          onChange={(e) => updateForm(tt.commMaxKey, e.target.value ? parseFloat(e.target.value) : undefined)}
+                          placeholder="—"
+                          className="w-24 text-right bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl px-3 py-2 font-bold focus:ring-bcp-orange/20 focus:border-bcp-orange transition-all"
                         />
                       </td>
                     </tr>
@@ -627,12 +662,13 @@ const PartnersPage = () => {
                     { value: 'SHA', label: 'SHA (Shared)' },
                   ]}
                 />
-                <FormInput
-                  label="Reimbursement"
-                  value={formData.reimbursement || ''}
-                  onChange={(e) => updateForm('reimbursement', e.target.value)}
-                  placeholder="e.g. true / false"
-                />
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-dark-bg-soft/50 border border-gray-100 dark:border-dark-border">
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Reimbursement</span>
+                  <Toggle
+                    checked={formData.reimbursement || false}
+                    onChange={(checked: boolean) => updateForm('reimbursement', checked)}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-dark-bg-soft/50 border border-gray-100 dark:border-dark-border">
@@ -672,9 +708,10 @@ const PartnersPage = () => {
                 />
                 <FormInput
                   label="Billing Account"
-                  value={formData.subscriptionBillingAccount || ''}
-                  onChange={(e) => updateForm('subscriptionBillingAccount', e.target.value)}
-                  placeholder="Account number"
+                  type="number"
+                  value={String(formData.subscriptionBillingAccount || 0)}
+                  onChange={(e) => updateForm('subscriptionBillingAccount', parseFloat(e.target.value) || 0)}
+                  placeholder="Billing account number"
                 />
               </div>
             </FormBlock>
@@ -724,11 +761,11 @@ const PartnersPage = () => {
             <div className="flex items-start justify-between">
               <div>
                 <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                  selectedPartner.partnerStatus
+                  selectedPartner.partnerStatus === 'ACTIVE'
                     ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-500/10 dark:text-green-400'
                     : 'bg-gray-50 text-gray-600 border-gray-100 dark:bg-gray-500/10 dark:text-gray-400'
                 }`}>
-                  {selectedPartner.partnerStatus ? 'Active' : 'Inactive'}
+                  {selectedPartner.partnerStatus === 'ACTIVE' ? 'Active' : 'Inactive'}
                 </span>
                 <h2 className="text-4xl font-black text-gray-900 dark:text-white mt-4">{selectedPartner.name}</h2>
                 <p className="text-gray-500 font-bold font-mono mt-1 tracking-tighter">REF: {selectedPartner.partnerReferenceNumber}</p>

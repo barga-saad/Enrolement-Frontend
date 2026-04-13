@@ -1,0 +1,1035 @@
+================================================================================
+    ENROLLMENT FRONTEND - ARCHITECTURE & IMPLEMENTATION GUIDE
+    React 18 + Vite + Tailwind CSS
+    Date: April 1, 2026
+================================================================================
+
+TABLE OF CONTENTS
+================================================================================
+1. Project Setup & Installation
+2. Architecture Overview
+3. Component Structure
+4. State Management
+5. API Integration
+6. Form Development
+7. Styling & Design System
+8. Authentication Flow
+9. Error Handling
+10. Performance Optimization
+11. Testing Approach
+12. Deployment
+
+
+1. PROJECT SETUP & INSTALLATION
+================================================================================
+
+PREREQUISITES:
+  - Node.js 16+ (npm or yarn)
+  - Git
+  - Code editor (VS Code recommended)
+
+INITIAL SETUP:
+  1. Navigate to project directory:
+     $ cd Enrolement-Frontend
+
+  2. Install dependencies:
+     $ npm install
+
+  3. Create .env file (from .env.example):
+     $ cp .env.example .env
+     
+     Edit .env with:
+     VITE_API_URL=http://localhost:8080
+     VITE_APP_NAME=BCP Enrollment Platform
+
+  4. Start development server:
+     $ npm run dev
+     
+     Output: Local: http://localhost:5173/
+
+  5. Build for production:
+     $ npm run build
+     
+     Output: dist/ folder ready for deployment
+
+  6. Preview production build:
+     $ npm run preview
+
+
+VERIFY INSTALLATION:
+  ✓ No console errors
+  ✓ Dev server runs on localhost:5173
+  ✓ Login page loads with BCP branding
+  ✓ Can see Tailwind styles applied
+
+
+2. ARCHITECTURE OVERVIEW
+================================================================================
+
+2.1 HIGH-LEVEL ARCHITECTURE
+────────────────────────────
+
+┌─────────────────────────────────────────────────────────────┐
+│                       APPLICATION LAYER                     │
+├─────────────────────────────────────────────────────────────┤
+│  App.tsx (React Router) → Layout → Pages (@/components)    │
+├─────────────────────────────────────────────────────────────┤
+│                      BUSINESS LOGIC LAYER                   │
+├─────────────────────────────────────────────────────────────┤
+│  Custom Hooks (useAuth, etc) → State (Zustand)             │
+├─────────────────────────────────────────────────────────────┤
+│                       SERVICE LAYER                         │
+├─────────────────────────────────────────────────────────────┤
+│  API Client (Axios) → HTTP Requests → Backend              │
+├─────────────────────────────────────────────────────────────┤
+│                    INFRASTRUCTURE LAYER                     │
+├─────────────────────────────────────────────────────────────┤
+│  Types (TypeScript) | Utilities | Styles (Tailwind)        │
+└─────────────────────────────────────────────────────────────┘
+
+SEPARATION OF CONCERNS:
+  ✓ UI Components: Handle rendering only
+  ✓ Services: Handle API calls
+  ✓ Hooks: Handle state + logic
+  ✓ Stores: Handle global state
+  ✓ Types: Handle type safety
+  ✓ Styles: Handle visual appearance
+
+
+2.2 DATA FLOW
+──────────────
+
+USER INTERACTION:
+  User clicks button
+    ↓
+  Event handler (onClick, onSubmit)
+    ↓
+  Call hook method (login, createUser, etc.)
+    ↓
+  Hook calls API service
+    ↓
+  API makes HTTP request
+    ↓
+  Backend responds
+    ↓
+  Update state (Zustand, useState)
+    ↓
+  React re-renders component
+    ↓
+  UI updates with new data
+
+
+2.3 DEPENDENCY GRAPH
+──────────────────────
+
+Main Dependencies:
+  react (18.2+)
+  react-dom (18.2+)
+  react-router-dom (6.0+)
+  axios (1.0+)
+  zustand (4.0+)
+  tailwindcss (3.3+)
+  typescript (5.0+)
+  lucide-react (0.216+)
+  vite (4.0+)
+
+Dev Dependencies:
+  @types/react
+  @types/react-dom
+  @types/node
+  tailwindcss
+  postcss
+  autoprefixer
+  @vitejs/plugin-react
+
+
+3. COMPONENT STRUCTURE
+================================================================================
+
+3.1 COMPONENT HIERARCHY
+─────────────────────────
+
+App.tsx (Root)
+├── LoginPage (Public route)
+│   └── Form (email, password, submit)
+│
+└── Layout (Protected routes)
+    ├── Sidebar
+    │   ├── Logo/Header
+    │   ├── Navigation Menu
+    │   ├── User Profile
+    │   └── Logout Button
+    │
+    ├── Navbar
+    │   ├── Menu Toggle
+    │   ├── Notifications
+    │   └── User Menu
+    │
+    └── Main Content Area
+        ├── DashboardPage
+        │   ├── Stats Cards[] (x4)
+        │   └── Recent Activity
+        │
+        ├── UsersPage (TODO)
+        │   ├── Users Table
+        │   ├── Add User Modal
+        │   ├── Edit User Modal
+        │   └── Assign Roles Modal
+        │
+        ├── RolesPage (TODO)
+        │   ├── Roles Table
+        │   ├── Add Role Modal
+        │   └── Assign Permissions Modal
+        │
+        └── PartnersPage (TODO)
+            ├── Partners Table
+            ├── Add Partner Modal
+            └── Edit Partner Modal
+
+
+3.2 COMPONENT PATTERNS
+───────────────────────
+
+FUNCTIONAL COMPONENTS:
+  ✓ All components are functional components (hooks)
+  ✗ No class components
+
+COMPONENT TEMPLATE:
+  import React, { useState } from 'react';
+  import { useAuth } from '@/hooks';
+  
+  interface ComponentProps {
+    title: string;
+    onSubmit?: () => void;
+  }
+  
+  export const MyComponent: React.FC<ComponentProps> = ({
+    title,
+    onSubmit,
+  }) => {
+    const [state, setState] = useState('');
+    const { user } = useAuth();
+    
+    const handleClick = () => {
+      // Logic here
+      onSubmit?.();
+    };
+    
+    return (
+      <div className="bg-white rounded-lg shadow-bcp-card p-6">
+        <h2 className="text-2xl font-bold text-bcp-brown">{title}</h2>
+        {/* Component content */}
+      </div>
+    );
+  };
+
+COMPONENT GUIDELINES:
+  ✓ Keep components small and focused
+  ✓ One component per file
+  ✓ Use TypeScript interfaces for props
+  ✓ Export component at end of file
+  ✓ Destructure props in function signature
+  ✓ Use array/object destructuring for state
+  ✓ Type all function parameters
+  ✓ Add JSDoc comments for complex components
+
+
+3.3 REUSABLE COMPONENT LIBRARY (TODO)
+───────────────────────────────────────
+
+TO BE CREATED:
+
+Button Component:
+  <Button variant="primary">Click me</Button>
+  <Button variant="secondary" disabled>Save</Button>
+  <Button variant="danger">Delete</Button>
+  
+  Props: variant, size, disabled, loading, onClick, children
+
+Input Component:
+  <Input type="email" placeholder="Enter email" value={email} onChange={...} />
+  <Input type="password" label="Password" error="Invalid" />
+  
+  Props: type, value, onChange, label, error, placeholder, required
+
+Card Component:
+  <Card className="hover">
+    <Card.Header>Title</Card.Header>
+    <Card.Body>Content</Card.Body>
+    <Card.Footer>Actions</Card.Footer>
+  </Card>
+  
+  Props: className, variant
+
+Table Component:
+  <Table data={rows} columns={columns} onRowClick={handleRowClick} />
+  
+  Props: data, columns, pagination, onSort, onRowClick
+
+Modal Component:
+  <Modal isOpen={true} onClose={() => {}}>
+    <Modal.Header>Title</Modal.Header>
+    <Modal.Body>Content</Modal.Body>
+    <Modal.Footer>Actions</Modal.Footer>
+  </Modal>
+  
+  Props: isOpen, onClose, title, size (sm, md, lg)
+
+Form Component:
+  <Form onSubmit={handleSubmit}>
+    <FormField label="Email" required error={errors.email}>
+      <Input type="email" {...register('email')} />
+    </FormField>
+    <button type="submit">Submit</button>
+  </Form>
+
+Badge Component:
+  <Badge status="active">Active</Badge>
+  <Badge status="pending">Pending</Badge>
+  <Badge status="inactive">Inactive</Badge>
+
+Dropdown Component:
+  <Dropdown items={items} onSelect={handleSelect} />
+
+Tooltip Component:
+  <Tooltip content="Help text">
+    <span>Hover me</span>
+  </Tooltip>
+
+
+4. STATE MANAGEMENT
+================================================================================
+
+4.1 ZUSTAND AUTH STORE
+───────────────────────
+
+FILE: src/utils/authStore.ts
+
+STORE STRUCTURE:
+  interface AuthState {
+    token: string | null;
+    user: User | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+    error: string | null;
+    
+    // Methods
+    login: (username: string, password: string) => Promise<void>;
+    logout: () => void;
+    setToken: (token: string) => void;
+    setUser: (user: User) => void;
+    setError: (error: string | null) => void;
+    hydrate: () => void;
+  }
+
+USAGE PATTERN:
+  const { token, user, login, logout } = useAuthStore();
+  
+  const handleLogin = async () => {
+    try {
+      await login(username, password);
+      // Auto-redirect happens via PrivateRoute
+    } catch (error) {
+      // Error is set in store
+    }
+  };
+
+PERSISTENCE:
+  ✓ Automatically saves to localStorage
+  ✓ Key: "auth-store"
+  ✓ Loads on app initialization
+  ✓ Clears on logout
+
+4.2 LOCAL STATE (useState)
+────────────────────────────
+
+When to use useState:
+  ✓ Form input values
+  ✓ Modal open/close
+  ✓ Sidebar toggle
+  ✓ Table sorting/pagination
+  ✓ Tab selection
+  ✓ Temporary UI state
+
+When to use Zustand:
+  ✓ User authentication
+  ✓ User profile
+  ✓ Global app settings
+  ✓ User permissions
+  ✓ Application theme (future)
+
+PATTERN:
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState<UserForm>({});
+  const [tableSort, setTableSort] = useState<Sort>({
+    field: 'name',
+    direction: 'asc'
+  });
+
+4.3 LIFTING STATE
+───────────────────
+
+When multiple components share state, lift to common parent:
+
+❌ WRONG (State in each component):
+  PageA: const [data, setData] = useState();
+  PageB: const [data, setData] = useState();
+  
+✓ CORRECT (State in parent):
+  App: const [data, setData] = useState();
+  PageA: <PageA data={data} onChange={setData} />
+  PageB: <PageB data={data} onChange={setData} />
+
+
+5. API INTEGRATION
+================================================================================
+
+5.1 API SERVICE USAGE
+──────────────────────
+
+FILE: src/services/api.ts
+
+BASIC USAGE:
+  import { apiService } from '@/services/api';
+  
+  // Login
+  const response = await apiService.login(username, password);
+  
+  // Get users
+  const users = await apiService.getUsers();
+  
+  // Create user
+  const newUser = await apiService.createUser({
+    username: 'john.doe',
+    email: 'john@example.com',
+    firstName: 'John',
+    lastName: 'Doe'
+  });
+  
+  // Update user
+  await apiService.updateUser(userId, { firstName: 'Jane' });
+  
+  // Delete user
+  await apiService.deleteUser(userId);
+
+ERROR HANDLING:
+  try {
+    const user = await apiService.getUser(id);
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.log('User not found');
+    } else if (error.response?.status === 401) {
+      console.log('Unauthorized - token expired');
+    } else {
+      console.log('Network error:', error.message);
+    }
+  }
+
+INTERCEPTOR BEHAVIOR:
+  ✓ All requests: Auto-injects JWT token from localStorage
+  ✓ All responses: 401 triggers logout and redirect to /login
+  ✓ All errors: Maintains error structure
+
+
+5.2 TYPE-SAFE API CALLS
+─────────────────────────
+
+All API methods are fully typed:
+
+✓ Parameters are typed
+  await apiService.createUser({
+    username: 'john',      // string - required
+    email: 'john@ex.com',  // string - required
+    firstName: 'John',     // string - required
+    // ... more required fields
+  });
+
+✓ Return values are typed
+  const user: User = await apiService.getUser(id);
+  const users: PaginatedResponse<User> = await apiService.getUsers();
+  const response: ApiResponse<void> = await apiService.deleteUser(id);
+
+
+5.3 AVAILABLE API ENDPOINTS
+─────────────────────────────
+
+AUTH ENDPOINTS:
+  apiService.login(username, password): Promise<LoginResponse>
+  apiService.logout(): Promise<void>
+
+USER MANAGEMENT:
+  apiService.getUsers(): Promise<PaginatedResponse<User>>
+  apiService.getUser(id): Promise<User>
+  apiService.createUser(data): Promise<User>
+  apiService.updateUser(id, data): Promise<User>
+  apiService.deleteUser(id): Promise<void>
+  apiService.getUserRoles(userId): Promise<Role[]>
+  apiService.assignRoleToUser(userId, roleId): Promise<void>
+  apiService.revokeRoleFromUser(userId, roleId): Promise<void>
+
+ROLE MANAGEMENT:
+  apiService.getRoles(): Promise<PaginatedResponse<Role>>
+  apiService.getRole(id): Promise<Role>
+  apiService.createRole(data): Promise<Role>
+  apiService.updateRole(id, data): Promise<Role>
+  apiService.deleteRole(id): Promise<void>
+  apiService.getRolePermissions(roleId): Promise<Permission[]>
+  apiService.assignPermissionToRole(roleId, permissionId): Promise<void>
+  apiService.removePermissionFromRole(roleId, permissionId): Promise<void>
+
+PERMISSION MANAGEMENT:
+  apiService.getPermissions(): Promise<PaginatedResponse<Permission>>
+  apiService.getPermission(id): Promise<Permission>
+  apiService.createPermission(data): Promise<Permission>
+  apiService.updatePermission(id, data): Promise<Permission>
+  apiService.deletePermission(id): Promise<void>
+
+PARTNER MANAGEMENT:
+  apiService.getPartners(): Promise<PaginatedResponse<Partner>>
+  apiService.getPartner(id): Promise<Partner>
+  apiService.createPartner(data): Promise<Partner>
+  apiService.updatePartner(id, data): Promise<Partner>
+  apiService.deletePartner(id): Promise<void>
+
+TRANSFER MANAGEMENT:
+  apiService.getTransfers(): Promise<PaginatedResponse<Transfer>>
+  apiService.createTransfer(data): Promise<Transfer>
+  apiService.getPartnerTransfers(partnerId): Promise<Transfer[]>
+  apiService.updateTransfer(id, data): Promise<Transfer>
+  apiService.deleteTransfer(id): Promise<void>
+
+
+6. FORM DEVELOPMENT
+================================================================================
+
+6.1 LOGIN FORM (REFERENCE)
+────────────────────────────
+
+FILE: src/components/pages/LoginPage.tsx
+
+STATUS: COMPLETE AND FUNCTIONAL
+
+KEY FEATURES:
+  ✓ Email + Password inputs
+  ✓ Real-time validation
+  ✓ Error messages
+  ✓ Loading state
+  ✓ Disabled during submission
+  ✓ BCP branding
+
+FORM SUBMISSION:
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Optional: Validate fields
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+    
+    try {
+      await login(email, password);
+      // Auto-redirect via useEffect
+    } catch (err) {
+      setError('Invalid credentials');
+    }
+  };
+
+6.2 CREATE USER FORM (TODO TEMPLATE)
+──────────────────────────────────────
+
+FORM STRUCTURE:
+  Fields:
+    - username (text)
+    - email (email)
+    - firstName (text)
+    - lastName (text)
+    - password (password)
+    - roles (multi-select)
+
+  Validation:
+    - All fields required
+    - Email format validation
+    - Password strength (8+ chars)
+    - No duplicate email
+
+  Submission:
+    - POST /admin/users
+    - Show success toast
+    - Refresh user table
+    - Close modal
+
+6.3 EDIT USER FORM (TODO TEMPLATE)
+─────────────────────────────────────
+
+FORM STRUCTURE:
+  Fields:
+    - username (text, read-only)
+    - email (email)
+    - firstName (text)
+    - lastName (text)
+    - roles (multi-select)
+    - status (radio: active/inactive)
+
+  Submission:
+    - PUT /admin/users/{id}
+    - Compare with original data
+    - Only send changed fields
+    - Show success toast
+    - Update table
+
+6.4 CREATE ROLE FORM (TODO TEMPLATE)
+──────────────────────────────────────
+
+FORM STRUCTURE:
+  Fields:
+    - roleName (text, required)
+    - description (textarea)
+    - permissions (multi-select, checkboxes)
+
+  Submission:
+    - POST /admin/roles
+    - Auto-assign permissions
+    - Show success toast
+    - Refresh role table
+
+
+7. STYLING & DESIGN SYSTEM
+================================================================================
+
+7.1 DESIGN SYSTEM TOKENS
+──────────────────────────
+
+FILE: src/styles/designSystem.ts
+
+All design tokens available for import:
+  const colors = {
+    bcp: {
+      orange: '#FF9900',
+      brown: '#6B4C3A',
+      // ... more colors
+    },
+    // ... more tokens
+  };
+
+But prefer Tailwind classes instead:
+  ✓ <div className="bg-bcp-orange">
+  ✗ <div style={{ backgroundColor: colors.bcp.orange }}>
+
+7.2 TAILWIND CSS BEST PRACTICES
+─────────────────────────────────
+
+USE THESE PATTERNS:
+  ✓ Class composition:
+    <div className="flex items-center justify-between gap-4 p-4 rounded-lg shadow-bcp-card">
+
+  ✓ Responsive:
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+
+  ✓ State variants:
+    <button className="bg-bcp-orange hover:bg-opacity-90 active:scale-95 disabled:opacity-50">
+
+  ✓ Conditional classes:
+    className={`base-classes ${isActive ? 'active-classes' : ''}`}
+
+AVOID THESE PATTERNS:
+  ✗ Inline styles:
+    <div style={{ backgroundColor: '#FF9900' }}>
+  
+  ✗ Complex class strings:
+    className="a b c d e f g h i"  (Hard to read)
+  
+  ✗ Missing responsive:
+    <div className="w-full">  (Should consider mobile)
+
+7.3 CUSTOM CSS
+────────────────
+
+FILE: src/styles/globals.css
+
+Custom classes available:
+  - .card-base: Card styling with hover
+  - .btn-base: Button base styles
+  - .glass-morphism: Glassmorphism effect
+  - .text-truncate-2: Ellipsis on 2 lines
+  - .text-truncate-3: Ellipsis on 3 lines
+
+CUSTOM ANIMATIONS:
+  - animate-fade-in
+  - animate-slide-up
+  - animate-slide-down
+  - animate-float
+
+USAGE:
+  <div className="card-base">
+    <h2 className="animate-fade-in">Title</h2>
+  </div>
+
+7.4 COLOR CLASSES
+───────────────────
+
+BCP ORANGE (Primary):
+  bg-bcp-orange, text-bcp-orange, border-bcp-orange
+  bg-bcp-orange-light, bg-bcp-orange-dark
+  hover:bg-bcp-orange
+
+BCP BROWN (Secondary):
+  bg-bcp-brown, text-bcp-brown, border-bcp-brown
+  hover:bg-bcp-brown
+
+GREYS:
+  text-grey-50, text-grey-900
+  bg-grey-100
+  border-grey-200
+
+GRADIENTS:
+  bg-gradient-bcp
+  bg-gradient-bcp-soft
+  bg-gradient-bcp-dark
+  bg-gradient-subtle
+
+SHADOWS:
+  shadow-bcp-soft, shadow-bcp-medium, shadow-bcp-card
+  shadow-bcp-hover, shadow-bcp-glow, shadow-bcp-elevated
+
+
+8. AUTHENTICATION FLOW
+================================================================================
+
+8.1 LOGIN FLOW
+────────────────
+
+USER LOGIN SEQUENCE:
+  1. User navigates to /login (if not authenticated)
+  2. User enters email + password
+  3. Click "Sign In"
+  4. LoginPage calls: await login(email, password)
+  5. Hook calls: apiService.login(email, password)
+  6. API call: POST /auth/login
+  7. Backend validates and returns JWT token
+  8. Token stored in localStorage
+  9. User object stored in localStorage
+  10. Zustand state updated
+  11. Component detects isAuthenticated = true
+  12. useEffect redirects to /dashboard
+  13. Layout renders with Sidebar + Navbar
+
+CODE EXAMPLE:
+  const LoginPage = () => {
+    const { login, error } = useAuthStore();
+    
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      try {
+        await login(email, password);
+        // Redirect handled by useEffect watching isAuthenticated
+      } catch (err) {
+        // Error displayed
+      }
+    };
+  };
+
+8.2 PROTECTED ROUTES
+──────────────────────
+
+PrivateRoute Component (src/components/common/PrivateRoute.tsx):
+  - Checks isAuthenticated from Zustand
+  - If true: render requested component
+  - If false: redirect to /login
+  - Optional: Check user roles for permission-based access
+
+USAGE IN APP.TSX:
+  <Routes>
+    <Route path="/login" element={<LoginPage />} />
+    <Route element={<PrivateRoute />}>
+      <Route path="/" element={<Layout><DashboardPage /></Layout>} />
+      <Route path="/users" element={<Layout><UsersPage /></Layout>} />
+    </Route>
+  </Routes>
+
+8.3 LOGOUT FLOW
+─────────────────
+
+LOGOUT SEQUENCE:
+  1. User clicks "Logout" in Sidebar
+  2. Sidebar calls: logout()
+  3. Zustand removes token, user, sets isAuthenticated = false
+  4. localStorage cleared
+  5. PrivateRoute detects isAuthenticated = false
+  6. Auto-redirect to /login
+  7. LoginPage rendered
+
+AUTO-LOGOUT ON TOKEN EXPIRATION:
+  1. User makes API request
+  2. Backend returns 401 (token expired)
+  3. Axios interceptor catches 401
+  4. Interceptor calls: logout()
+  5. Sequence follows logout flow above
+
+8.4 SESSION PERSISTENCE
+──────────────────────────
+
+ON APP LOAD:
+  1. App.tsx renders
+  2. useRef(false) prevents double hydration
+  3. useEffect calls: authStore.hydrate()
+  4. Hydrate reads localStorage
+  5. Loads token + user + sets isAuthenticated
+  6. useAuth hook receives updated state
+  7. PrivateRoute allows access if isAuthenticated
+
+BENEFITS:
+  ✓ Users stay logged in on page refresh
+  ✓ No need to login again
+  ✓ Automatic on app load
+
+
+9. ERROR HANDLING
+================================================================================
+
+9.1 API ERROR HANDLING
+──────────────────────
+
+TRY-CATCH PATTERN:
+  const handleCreateUser = async (userData: UserCreateRequest) => {
+    try {
+      const newUser = await apiService.createUser(userData);
+      // Success
+      showSuccessToast('User created');
+      refreshUserList();
+    } catch (error: any) {
+      // Network error
+      if (!error.response) {
+        showErrorToast('Network error');
+        return;
+      }
+      
+      // Server error
+      const status = error.response.status;
+      const message = error.response.data?.message;
+      
+      if (status === 409) {
+        setFieldError('email', 'Email already exists');
+      } else if (status === 400) {
+        showErrorToast(message || 'Invalid data');
+      } else {
+        showErrorToast('Server error');
+      }
+    }
+  };
+
+HTTP STATUS CODES:
+  - 200-299: Success (no error)
+  - 400: Bad request (validation error)
+  - 401: Unauthorized (token expired, redirects to login)
+  - 403: Forbidden (insufficient permissions)
+  - 404: Not found (resource doesn't exist)
+  - 409: Conflict (duplicate email, etc.)
+  - 500: Server error (bug in backend)
+
+9.2 FORM VALIDATION
+─────────────────────
+
+CLIENT-SIDE VALIDATION:
+  const validateForm = (data: FormData): Errors => {
+    const errors: Errors = {};
+    
+    if (!data.username) {
+      errors.username = 'Username is required';
+    }
+    
+    if (!data.email) {
+      errors.email = 'Email is required';
+    } else if (!isValidEmail(data.email)) {
+      errors.email = 'Invalid email format';
+    }
+    
+    if (data.password && data.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    }
+    
+    return errors;
+  };
+
+FIELD-LEVEL DISPLAY:
+  {errors.email && (
+    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+  )}
+
+SERVER-SIDE VALIDATION:
+  - Backend validates all input
+  - Returns 400 with detailed errors
+  - Display on corresponding fields
+
+9.3 ERROR BOUNDARIES (TODO)
+──────────────────────────────
+
+FUTURE IMPLEMENTATION:
+  Create ErrorBoundary component to catch React errors
+  Display fallback UI instead of white screen
+  Log errors for debugging
+
+
+10. PERFORMANCE OPTIMIZATION
+================================================================================
+
+10.1 CODE SPLITTING
+─────────────────────
+
+LAZY LOADING ROUTES:
+  import { lazy } from 'react';
+  
+  const DashboardPage = lazy(() =>
+    import('@/components/pages/DashboardPage')
+  );
+  
+  // In Routes:
+  <Suspense fallback={<LoadingSpinner />}>
+    <Route path="/dashboard" element={<DashboardPage />} />
+  </Suspense>
+
+BENEFITS:
+  ✓ Smaller initial bundle
+  ✓ Faster page load
+  ✓ Pages load on demand
+
+10.2 COMPONENT MEMOIZATION
+────────────────────────────
+
+USE REACT.MEMO FOR:
+  ✓ Pure components (no side effects)
+  ✓ Components receiving many props
+  ✓ Components in lists
+
+export const UserCard = React.memo(
+  ({ user, onEdit }: UserCardProps) => (
+    <div className="card-base" onClick={() => onEdit(user.id)}>
+      {user.name}
+    </div>
+  ),
+  (oldProps, newProps) => {
+    // Custom comparison
+    return oldProps.user.id === newProps.user.id;
+  }
+);
+
+10.3 FUNCTION MEMOIZATION
+──────────────────────────
+
+USE useCallback FOR:
+  ✓ Event handlers passed to child components
+  ✓ Functions used in useEffect dependencies
+
+const handleEdit = useCallback((userId: number) => {
+  openEditModal(userId);
+}, [openEditModal]);  // Dependencies
+
+
+11. TESTING APPROACH
+================================================================================
+
+TO BE IMPLEMENTED:
+
+UNIT TESTS:
+  - Test utility functions (formatDate, isValidEmail, etc.)
+  - Test hooks (useAuth, useWindowSize, etc.)
+  - Test store (authStore login, logout, hydrate)
+
+COMPONENT TESTS:
+  - LoginPage (submit, error handling, disabled state)
+  - Sidebar (menu filtering, logout)
+  - Table components (sorting, pagination)
+
+INTEGRATION TESTS:
+  - Full login flow
+  - Create user flow
+  - Admin permission checks
+
+E2E TESTS:
+  - Cypress or Playwright
+  - Test complete user journeys
+  - Cross-browser testing
+
+TEST STRUCTURE:
+  ✓ Each feature has corresponding tests
+  ✓ Tests verify behavior, not implementation
+  ✓ >80% coverage target
+
+
+12. DEPLOYMENT
+================================================================================
+
+12.1 BUILD PROCESS
+────────────────────
+
+$ npm run build
+
+OUTPUT:
+  dist/
+    ├── index.html
+    ├── assets/
+    │   ├── index-xxxxx.js
+    │   └── index-xxxxx.css
+    └── favicon.ico
+
+12.2 DEPLOYMENT OPTIONS
+─────────────────────────
+
+VERCEL (RECOMMENDED):
+  1. Create account at vercel.com
+  2. Connect GitHub repo
+  3. Auto-deploy on push to main
+  4. Set VITE_API_URL environment variable
+  5. Deploy with zero config
+
+NETLIFY:
+  1. Connect GitHub repo
+  2. Build command: npm run build
+  3. Publish directory: dist
+  4. Set environment variables
+  5. Deploy
+
+DOCKER:
+  1. Create Dockerfile
+  2. Build image: docker build -t frontend .
+  3. Run container: docker run -p 5173:80 frontend
+
+DOCKER COMPOSE:
+  1. Add service to docker-compose.yml
+  2. run: docker-compose up
+  3. Fronted available at localhost
+
+12.3 ENVIRONMENT VARIABLES
+────────────────────────────
+
+.env.development:
+  VITE_API_URL=http://localhost:8080
+
+.env.production:
+  VITE_API_URL=https://api.bcp-bank.com
+
+ACCESS IN APP:
+  const apiUrl = import.meta.env.VITE_API_URL;
+
+12.4 PERFORMANCE MONITORING
+──────────────────────────────
+
+FUTURE ADDITIONS:
+  - Web Vitals tracking
+  - Error reporting (Sentry)
+  - Analytics (GA4)
+  - Performance profiling
+
+
+================================================================================
+END OF FRONTEND ARCHITECTURE GUIDE
+================================================================================
+
+This document provides comprehensive development guidelines.
+Refer to specific sections as needed during implementation.
+
+All patterns, examples, and best practices documented above.
+Questions? Refer to FRONTEND_CONTEXT.txt and FRONTEND_DEVELOPMENT_HISTORY.txt
+
+Version: 1.0
+Date: April 1, 2026

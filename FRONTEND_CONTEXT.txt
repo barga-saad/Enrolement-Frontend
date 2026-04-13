@@ -1,0 +1,483 @@
+================================================================================
+    ENROLLMENT FRONTEND - PROJECT CONTEXT & ARCHITECTURE
+    React 18 + Vite + Tailwind CSS
+    Date: April 1, 2026
+================================================================================
+
+1. PROJECT OVERVIEW
+================================================================================
+
+PROJECT NAME: BCP Partner Enrollment Platform - Frontend
+ORGANIZATION: BCP Bank Morocco (Banque Centrale Populaire)
+PURPOSE: Modern, enterprise-grade partner management and enrollment system
+
+TECHNOLOGY STACK:
+  - React 18 (latest, modern hooks)
+  - TypeScript (type safety, scalability)
+  - Vite (ultra-fast build tool)
+  - Tailwind CSS (utility-first styling)
+  - Zustand (lightweight state management)
+  - React Router v6 (client-side routing)
+  - Axios (HTTP client with interceptors)
+  - Lucide React (modern icon library)
+
+
+2. DESIGN SYSTEM - BCP BRAND IDENTITY
+================================================================================
+
+VISUAL IDENTITY INSPIRED BY: Banque Centrale Populaire Morocco
+
+PRIMARY COLORS:
+  - BCP Orange: #FF9900 (Main brand color, primary actions)
+  - BCP Brown: #6B4C3A (Secondary, text, elevation)
+  - White: #FFFFFF (Backgrounds, cards)
+  - Grey Palette: #F5F5F5 to #212121 (Neutral scale)
+
+DESIGN PHILOSOPHY:
+  ✓ Modern banking UI
+  ✓ Professional enterprise look
+  ✓ Clean and minimal aesthetic
+  ✓ Elegant gradients (orange → brown)
+  ✓ Soft shadows and smooth transitions
+  ✓ Premium, bank-grade interface
+
+DESIGN FEATURES:
+  - Subtle animated gradients
+  - Floating shapes/abstract backgrounds
+  - Dashboard-style layout
+  - Glassmorphism effects (soft usage)
+  - Smooth hover effects
+  - Micro-interactions
+  - Enterprise-safe motion design
+  - Responsive across all devices
+
+
+3. FOLDER STRUCTURE
+================================================================================
+
+Enrolement-Frontend/
+├── public/                      # Static assets
+├── src/
+│   ├── components/
+│   │   ├── common/             # Reusable UI components
+│   │   │   └── PrivateRoute.tsx
+│   │   ├── layout/             # Layout components
+│   │   │   ├── Layout.tsx (main app layout)
+│   │   │   ├── Sidebar.tsx (left navigation)
+│   │   │   └── Navbar.tsx (top bar)
+│   │   └── pages/              # Page components
+│   │       ├── LoginPage.tsx
+│   │       ├── DashboardPage.tsx
+│   │       └── index.tsx (Users, Roles, Partners pages)
+│   ├── services/
+│   │   └── api.ts             # Axios client & API methods
+│   ├── styles/
+│   │   ├── designSystem.ts    # Color tokens, gradients, shadows
+│   │   ├── globals.css        # Global CSS & animations
+│   │   └── index.ts           # Styles index
+│   ├── types/
+│   │   └── index.ts           # TypeScript type definitions
+│   ├── utils/
+│   │   ├── helpers.ts         # Utility functions
+│   │   └── authStore.ts       # Zustand auth store
+│   ├── hooks/
+│   │   └── index.ts           # Custom React hooks
+│   ├── App.tsx                # Root app component
+│   └── main.tsx               # React entry point
+├── index.html                  # HTML template
+├── package.json               # Dependencies
+├── vite.config.ts             # Vite configuration
+├── tsconfig.json              # TypeScript config
+├── tailwind.config.js         # Tailwind configuration
+├── postcss.config.js          # PostCSS configuration
+└── FRONTEND_CONTEXT.txt       # This file
+
+
+4. COLOR TOKENS & DESIGN SYSTEM
+================================================================================
+
+IMPLEMENTED COLOR TOKENS:
+  - bcp-orange: Primary brand (forms, buttons, links, hover effects)
+  - bcp-brown: Secondary (text, headings, sidebars)
+  - bcp-grey: Neutral scale (backgrounds, borders, disabled states)
+
+GRADIENTS:
+  - gradient-bcp: Orange → Brown (primary actions)
+  - gradient-bcp-soft: Light Orange → Light Brown
+  - gradient-bcp-dark: Dark Orange → Dark Brown
+  - gradient-subtle: Soft subtle backgrounds
+
+SHADOWS:
+  - shadow-bcp-soft: Card shadows
+  - shadow-bcp-medium: Elevated elements
+  - shadow-bcp-card: Input/form shadows
+  - shadow-bcp-hover: Hover state enhancement
+  - shadow-bcp-glow: Glow effects
+
+ANIMATIONS:
+  - fade-in: 0.3s smooth fade
+  - slide-up: 0.3s slide up + fade
+  - slide-down: 0.3s slide down + fade
+  - float: Continuous floating animation
+  - pulse-subtle: Breathing effect
+
+
+5. COMPONENT ARCHITECTURE
+================================================================================
+
+LAYOUT COMPONENTS:
+  - Layout: Main wrapper with sidebar + navbar + content area
+  - Sidebar: Left navigation with animated menu, user info, logout
+  - Navbar: Top bar with notifications, user profile, menu toggle
+
+PAGE COMPONENTS:
+  - LoginPage: Authentication with BCP branding
+  - DashboardPage: Overview with stats and activity
+  - UsersPage: User management (placeholder, to be implemented)
+  - RolesPage: Role management (placeholder, to be implemented)
+  - PartnersPage: Partner management (placeholder, to be implemented)
+
+COMMON COMPONENTS (To be built):
+  - Button variants (primary, secondary, danger, disabled)
+  - Card containers (with hover effects)
+  - Forms & inputs (text, email, password, select)
+  - Tables (sortable, paginated, responsive)
+  - Modals (confirm, form, alert)
+  - Badges (status colors)
+  - Dropdowns (menus, user menu)
+  - Tooltips
+  - Notifications/Toast
+
+
+6. STATE MANAGEMENT - ZUSTAND
+================================================================================
+
+AUTH STORE (useAuthStore):
+  State:
+    - token: JWT auth token
+    - user: Current authenticated user
+    - isAuthenticated: Boolean flag
+    - isLoading: Loading state during login
+    - error: Error message
+
+  Methods:
+    - login(username, password): Authenticate user
+    - logout(): Clear auth state
+    - setToken(token): Update token
+    - setUser(user): Update user
+    - setError(error): Update error
+    - hydrate(): Load from localStorage on app init
+
+  Usage:
+    const { user, login, logout, isAuthenticated } = useAuthStore();
+
+
+7. API INTEGRATION
+================================================================================
+
+API CLIENT (Axios):
+  - Base URL: http://localhost:8080
+  - Auto-adds JWT token to all requests
+  - Handles 401 errors (token expiration)
+  - Returns typed responses
+
+API ENDPOINTS IMPLEMENTED:
+  Auth:
+    - POST /auth/login
+    - POST /auth/logout
+
+  Users (Admin):
+    - GET /admin/users
+    - POST /admin/users
+    - GET /admin/users/{id}
+    - PUT /admin/users/{id}
+    - DELETE /admin/users/{id}
+    - POST /admin/users/{userId}/roles
+    - DELETE /admin/users/{userId}/roles/{roleId}
+
+  Roles (Admin):
+    - GET /admin/roles
+    - POST /admin/roles
+    - GET /admin/roles/{id}
+    - PUT /admin/roles/{id}
+    - DELETE /admin/roles/{id}
+    - POST /admin/roles/{roleId}/permissions
+    - DELETE /admin/roles/{roleId}/permissions/{permissionId}
+
+  Permissions (Admin):
+    - GET /admin/permissions
+    - POST /admin/permissions
+    - GET /admin/permissions/{id}
+    - PUT /admin/permissions/{id}
+    - DELETE /admin/permissions/{id}
+
+  Partners:
+    - GET /v1/read/partners
+    - POST /v1/create/partners
+    - GET /getpartner/{id}
+    - PUT /v1/update/partners
+
+  Transfers:
+    - GET /v1/read/transfers
+    - POST /v1/create/transfers
+    - GET /gealltransfers/{partnerId}
+
+
+8. CUSTOM HOOKS
+================================================================================
+
+useAuth():
+  - Access: token, user, isAuthenticated, isLoading, error
+  - Methods: login(username, password), logout()
+  - Behavior: Auto-hydrates on component load
+
+useWindowSize():
+  - Returns: { width, height }
+  - Updates on resize
+
+useIsMobile():
+  - Returns: boolean (true if width < 768px)
+  - Updates on resize
+
+usePrevious<T>():
+  - Returns: Previous value of prop/state
+  - Useful for comparisons
+
+
+9. TYPE DEFINITIONS (TypeScript)
+================================================================================
+
+USER TYPES:
+  - User: ID, username, email, firstName, lastName, roleNames, audit fields
+  - AuthState: token, user, isAuthenticated, isLoading, error
+  - LoginResponse: token, user
+
+ROLE TYPES:
+  - Role: ID, roleName, description, permissionNames, audit fields
+  - RoleCreateRequest: roleName, description, isActive
+  - RoleUpdateRequest: description, isActive
+
+PERMISSION TYPES:
+  - Permission: ID, permissionName, endpoint, httpMethod, requiresOwnerCheck
+  - PermissionCreateRequest: All permission fields
+  - PermissionUpdateRequest: description, requiresOwnerCheck, isActive
+
+PARTNER TYPES:
+  - Partner: ID, name, email, phone, address, status, audit fields
+  - PartnerCreateRequest: name, email, phone, address
+  - PartnerUpdateRequest: name, email, phone, address, status (optional)
+
+TRANSFER TYPES:
+  - Transfer: ID, amount, currency, status, partnerId, audit fields
+  - TransferCreateRequest: amount, currency, partnerId
+
+API RESPONSE TYPES:
+  - ApiResponse<T>: success, data, message, timestamp
+  - PaginatedResponse<T>: content[], totalElements, totalPages, currentPage, pageSize
+  - ApiError: status, message, timestamp, path, errors
+
+
+10. AUTHENTICATION FLOW
+================================================================================
+
+LOGIN FLOW:
+  1. User enters username + password on LoginPage
+  2. Click "Sign In" button
+  3. API call: POST /auth/login with credentials
+  4. On success:
+     - Store JWT token in localStorage
+     - Store user object in localStorage
+     - Update Zustand auth store
+     - Redirect to Dashboard
+  5. On error:
+     - Display error message
+     - Token stays in localStorage for retry
+
+PROTECTED ROUTES:
+  - All routes except /login require isAuthenticated = true
+  - PrivateRoute component checks auth state
+  - Auto-redirect to /login if not authenticated
+
+TOKEN MANAGEMENT:
+  - JWT sent in: Authorization: Bearer <token>
+  - Added by Axios interceptor
+  - Persisted in localStorage
+  - Loaded on app init via hydrate()
+
+LOGOUT:
+  - Clear Zustand state
+  - Remove localStorage data
+  - Redirect to login page
+
+
+11. RESPONSIVE DESIGN
+================================================================================
+
+BREAKPOINTS (Tailwind):
+  - sm: 640px
+  - md: 768px (sidebar toggle point)
+  - lg: 1024px
+  - xl: 1280px
+  - 2xl: 1536px
+
+MOBILE FIRST:
+  - Sidebar hidden on mobile (toggle button in navbar)
+  - Full-width layout on small screens
+  - Grid adjusts: 1 col mobile → 2 col tablet → 4 col desktop
+
+TOUCH FRIENDLY:
+  - Buttons min 44px height
+  - Spacing optimized for thumb reach
+  - Large touch targets
+
+
+12. STYLING APPROACH
+================================================================================
+
+TAILWIND CSS:
+  - Utility-first CSS framework
+  - No custom CSS needed for most elements
+  - Extended with custom colors (see tailwind.config.js)
+  - Custom animations and shadows
+
+CSS MODULES / GLOBAL CSS:
+  - globals.css: Base styles, animations, common utilities
+  - Component-level Tailwind classes in JSX
+  - Custom utilities: .card-base, .btn-base, .glass-morphism
+
+CUSTOM ANIMATIONS:
+  - Keyframes defined in globals.css
+  - Applied via className="animate-*"
+  - Ease-in-out for natural motion
+
+
+13. PERFORMANCE CONSIDERATIONS
+================================================================================
+
+OPTIMIZATION STRATEGIES:
+  - Code splitting via React Router
+  - Lazy loading pages (if needed)
+  - Image optimization (if used)
+  - CSS purging (Tailwind automatically)
+  - Tree-shaking of unused code
+  - Minimized bundle with Vite
+
+RENDERING:
+  - Functional components with hooks
+  - Memoization for heavy components (React.memo)
+  - useCallback for event handlers
+  - useMemo for expensive calculations
+
+CACHING:
+  - localStorage for auth tokens/user data
+  - API cache in Zustand store (if needed)
+
+
+14. ERROR HANDLING
+================================================================================
+
+API ERRORS:
+  - Axios interceptor catches 401 errors
+  - Auto-logout on token expiration
+  - Error messages displayed to user
+  - Retry logic available
+
+FORM VALIDATION:
+  - Client-side validation before submit
+  - Server-side validation errors shown to user
+  - Field-level error messages
+
+NETWORK ERRORS:
+  - Timeout: 30 seconds
+  - Offline detection (if needed)
+  - Retry mechanism (if needed)
+
+
+15. DEPLOYMENT READY
+================================================================================
+
+BUILD PROCESS:
+  npm install          # Install dependencies
+  npm run dev         # Development server (localhost:5173)
+  npm run build       # Production build (dist/)
+  npm run preview     # Preview production build
+
+ENVIRONMENT VARIABLES:
+  VITE_API_URL=http://localhost:8080  # Backend URL
+
+PRODUCTION OPTIMIZATIONS:
+  - Minified bundles
+  - Optimized images
+  - CSS purging
+  - Code splitting
+  - Service worker (if needed)
+
+
+16. FUTURE ENHANCEMENTS
+================================================================================
+
+SHORT TERM (HIGH PRIORITY):
+  ✓ Build Users management page (CRUD)
+  ✓ Build Roles management page (CRUD)
+  ✓ Build Partners management page (CRUD)
+  ✓ Build Transfer management page
+  ✓ Implement search and filters
+  ✓ Add pagination to lists
+  ✓ Implementation of all modals and forms
+  ✓ Permission-based UI (show/hide based on user roles)
+
+MEDIUM TERM:
+  - Dark mode support
+  - Export to PDF/Excel
+  - Advanced reporting
+  - Multi-language i18n
+  - User preferences/settings
+  - Audit log viewer
+  - Activity timeline
+
+LONG TERM:
+  - Mobile app (React Native)
+  - Progressive Web App (PWA)
+  - Real-time notifications
+  - Advanced analytics
+  - Machine learning integrations
+  - API-driven dashboards
+
+
+17. DEVELOPMENT GUIDELINES
+================================================================================
+
+NAMING CONVENTIONS:
+  - Components: PascalCase (LoginPage.tsx)
+  - Files: Match component name
+  - Functions: camelCase (handleClick)
+  - Constants: UPPER_SNAKE_CASE (API_BASE_URL)
+  - Types: PascalCase (User, ApiResponse)
+
+CODE ORGANIZATION:
+  - One component per file
+  - Group related imports
+  - Export at bottom of file
+  - Use TypeScript strict mode
+  - Type all function parameters
+
+BEST PRACTICES:
+  - Use hooks for state management
+  - Prefer functional components
+  - Keep components small and focused
+  - Prop drilling minimized with Zustand
+  - Comments for complex logic
+  - Error boundaries for error handling
+
+
+================================================================================
+END OF FRONTEND CONTEXT DOCUMENT
+================================================================================
+
+This document provides complete context for frontend development.
+All structure, styling, state management, and API integration are defined.
+Ready to start building individual pages and components.
+
+Version: 1.0
+Date: April 1, 2026
+Status: Foundation Complete - Ready for Page Development

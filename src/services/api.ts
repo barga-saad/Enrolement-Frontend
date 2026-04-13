@@ -165,4 +165,43 @@ export const apiService = {
 
   deleteTransfer: (id: string) =>
     apiClient.delete('/v1/delete/transfers', { params: { transferReferenceNumber: id } }),
+
+  // Validation endpoints
+  submitForValidation: (partnerId: number) =>
+    apiClient.post(`/v1/validations/partners/${partnerId}/submit`),
+
+  saveDraft: (partnerId: number) =>
+    apiClient.post(`/v1/validations/partners/${partnerId}/draft`),
+
+  validatePartner: (validationId: number) =>
+    apiClient.post(`/v1/validations/${validationId}/validate`),
+
+  rejectPartner: (validationId: number, reason: string) =>
+    apiClient.post(`/v1/validations/${validationId}/reject`, { reason }),
+
+  getPendingValidations: () =>
+    apiClient.get('/v1/validations/pending'),
+
+  getDraftValidations: () =>
+    apiClient.get('/v1/validations/drafts'),
+
+  getValidationHistory: (partnerId: number) =>
+    apiClient.get(`/v1/validations/history/${partnerId}`),
+
+  getValidation: (validationId: number) =>
+    apiClient.get(`/v1/validations/${validationId}`),
+
+  // Export endpoints
+  exportPartnersCsv: () =>
+    apiClient.get('/v1/export/partners', { responseType: 'blob' }),
+
+  // Audit log endpoints
+  getAuditLogs: (page = 0, size = 20) =>
+    apiClient.get(`/admin/audit-logs?page=${page}&size=${size}`),
+
+  getAuditLogsByEntity: (entityType: string, page = 0, size = 20) =>
+    apiClient.get(`/admin/audit-logs/by-entity?entityType=${entityType}&page=${page}&size=${size}`),
+
+  getAuditLogsByUser: (userId: number, page = 0, size = 20) =>
+    apiClient.get(`/admin/audit-logs/by-user/${userId}?page=${page}&size=${size}`),
 };

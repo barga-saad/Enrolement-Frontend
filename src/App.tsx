@@ -13,6 +13,7 @@ import DashboardPage from './components/pages/DashboardPage';
 import UsersPage from './components/pages/UsersPage';
 import RolesPage from './components/pages/RolesPage';
 import PartnersPage from './components/pages/PartnersPage';
+import AuditLogPage from './components/pages/AuditLogPage';
 import ChangePasswordPage from './components/pages/ChangePasswordPage';
 
 // Components
@@ -66,7 +67,11 @@ function App() {
                   <Routes>
                     <Route path="/" element={<DashboardPage />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
-                    <Route path="/partners" element={<PartnersPage />} />
+                    <Route path="/partners" element={<PartnersPage key="partners-list" />} />
+                    <Route path="/partners/new" element={<PartnersPage key="partners-new" initialMode="create" />} />
+                    <Route path="/partners/edit" element={<PartnersPage key="partners-edit" initialMode="edit" />} />
+                    <Route path="/partners/validate" element={<PartnersPage key="partners-validate" initialMode="validate" />} />
+                    <Route path="/partners/consult" element={<PartnersPage key="partners-consult" initialMode="consult" />} />
                     
                     {/* Admin-only pages */}
                     <Route
@@ -84,6 +89,16 @@ function App() {
                       element={
                         isAdmin ? (
                           <RolesPage />
+                        ) : (
+                          <UnauthorizedPage />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/audit"
+                      element={
+                        isAdmin ? (
+                          <AuditLogPage />
                         ) : (
                           <UnauthorizedPage />
                         )

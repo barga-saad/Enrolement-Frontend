@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -12,6 +13,7 @@ export default {
           orange: '#FF9900',      // Primary BCP Orange
           'orange-light': '#FFB84D',
           'orange-dark': '#FF8800',
+          'orange-soft': 'rgba(255, 153, 0, 0.1)',
           brown: '#6B4C3A',       // Secondary Brown
           'brown-light': '#8B6F63',
           'brown-dark': '#4A3728',
@@ -19,12 +21,31 @@ export default {
           'grey-dark': '#E8E8E8',
           'grey-text': '#666666',
         },
+        // Dark Mode specific colors
+        'dark': {
+          bg: '#121212',
+          'bg-soft': '#1E1E1E',
+          'bg-card': '#252525',
+          text: '#F5F5F5',
+          'text-dim': '#A0A0A0',
+          border: '#333333',
+        },
         // Status colors
         'status': {
           success: '#10B981',
           warning: '#F59E0B',
           error: '#EF4444',
           info: '#3B82F6',
+        },
+        // Warm palette for premium light theme
+        'warm': {
+          '50': '#FDFCFB',
+          '100': '#F9F7F4',
+          '200': '#F5F1EB', // Main card background (Light Theme)
+          '300': '#EBE4DA',
+          '400': '#D6C7B3',
+          '500': '#B0987E',
+          '600': '#8B735B', // Text/Borders in Light Theme
         }
       },
       backgroundImage: {

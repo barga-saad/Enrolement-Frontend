@@ -1,13 +1,9 @@
-/**
- * Dashboard Page Component
- * Main dashboard with overview and statistics (role-based)
- */
-
 import { useState, useEffect } from 'react';
-import { Users, Shield, FileText, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { Users, Shield, FileText, TrendingUp, Clock, CheckCircle, ArrowUpRight, Activity, Calendar } from 'lucide-react';
 import { useToast } from '../../utils/toastStore';
 import { useAuth } from '../../hooks';
 import { apiService } from '../../services/api';
+import { useLangStore, t } from '../../utils/langStore';
 
 interface DashboardStats {
   totalUsers?: number;
@@ -30,11 +26,11 @@ interface RecentActivity {
 const DashboardPage = () => {
   const toast = useToast();
   const { user } = useAuth();
+  const { lang: _lang } = useLangStore();
   const [stats, setStats] = useState<DashboardStats>({});
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is admin
   const isAdmin = user?.roleNames?.some(
     (role) => role.toUpperCase() === 'ADMIN' || role.toUpperCase().includes('ADMIN')
   ) || false;
@@ -48,7 +44,6 @@ const DashboardPage = () => {
       setLoading(true);
 
       if (isAdmin) {
-        // Admin sees all data
         const [usersRes, rolesRes, partnersRes, permissionsRes] = await Promise.allSettled([
           apiService.getUsers(),
           apiService.getRoles(),
@@ -75,14 +70,13 @@ const DashboardPage = () => {
           totalPermissions: Array.isArray(permissions) ? permissions.length : 0,
         });
 
-        // Generate activities
         const activities: RecentActivity[] = [];
         if (Array.isArray(partners) && partners.length > 0) {
           partners.slice(0, 2).forEach((partner: any, index: number) => {
             activities.push({
               id: `partner-${index}`,
               type: 'partner',
-              action: 'Partner added',
+              action: t('Profil Partenaire Créé', 'Partner Profile Created'),
               entity: partner.partnerName || `Partner ${index + 1}`,
               timestamp: new Date(partner.createdAt || Date.now()).toLocaleDateString(),
               status: 'success',
@@ -94,7 +88,7 @@ const DashboardPage = () => {
             activities.push({
               id: `user-${index}`,
               type: 'user',
-              action: 'User created',
+              action: t('Nouvel Utilisateur Enregistré', 'New User Registered'),
               entity: u.username || `User ${index + 1}`,
               timestamp: new Date(u.createdAt || Date.now()).toLocaleDateString(),
               status: u.isActive ? 'success' : 'warning',
@@ -103,7 +97,6 @@ const DashboardPage = () => {
         }
         setRecentActivity(activities.slice(0, 5));
       } else {
-        // Non-admin users only see partner stats
         try {
           const partnersRes = await apiService.getPartners();
           const partners = partnersRes.data?.data || [];
@@ -118,7 +111,7 @@ const DashboardPage = () => {
               activities.push({
                 id: `partner-${index}`,
                 type: 'partner',
-                action: 'Partner',
+                action: t('Révision Partenaire', 'Partner Review'),
                 entity: partner.partnerName || `Partner ${index + 1}`,
                 timestamp: new Date(partner.createdAt || Date.now()).toLocaleDateString(),
                 status: 'success',
@@ -130,32 +123,42 @@ const DashboardPage = () => {
           console.error('Error loading partner data:', error);
         }
       }
-
-      toast.success('Dashboard loaded');
     } catch (error) {
       console.error('Error loading dashboard:', error);
-      toast.error('Failed to load dashboard data');
+      toast.error(t('Échec de la synchronisation des métriques', 'Failed to sync dashboard metrics'));
     } finally {
       setLoading(false);
     }
   };
 
   const ROLE_LABELS: Record<string, string> = {
-    PROFIL_ADMIN_CENTRAL: 'Admin Central',
-    PROFIL_SAISIE: 'Saisie',
-    PROFIL_VALIDATEUR: 'Validateur',
-    PROFIL_CONSULTATION: 'Consultation',
+    PROFIL_ADMIN_CENTRAL: t('Admin Central', 'Central Admin'),
+    PROFIL_SAISIE: t('Saisie', 'Data Entry'),
+    PROFIL_VALIDATEUR: t('Validateur', 'Validator'),
+    PROFIL_CONSULTATION: t('Consultation', 'Consultation'),
   };
 
-  const StatCard = ({ icon: Icon, label, value, color }: any) => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition">
-      <div className="flex items-center justify-between">
+  const StatCard = ({ icon: Icon, label, value, color, trend }: any) => (
+    <div className="card-base p-6 group hover:border-bcp-orange/20 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-bcp-orange/5 to-transparent rounded-bl-[4rem] transition-all duration-500 group-hover:w-32 group-hover:h-32" />
+      
+      <div className="flex items-start justify-between relative z-10">
         <div>
-          <p className="text-gray-500 text-sm font-medium">{label}</p>
-          <p className={`text-3xl font-bold mt-2 ${color}`}>{loading ? '...' : (value ?? 0)}</p>
+          <p className="text-gray-500 dark:text-dark-text-dim text-xs font-bold uppercase tracking-widest mb-1">{label}</p>
+          <div className="flex items-baseline space-x-2">
+            <h3 className={`text-3xl font-black ${color}`}>
+              {loading ? <div className="w-12 h-8 bg-gray-100 dark:bg-dark-bg-soft animate-pulse rounded-lg" /> : (value ?? 0)}
+            </h3>
+            {trend && (
+              <span className="text-[10px] font-bold text-green-500 flex items-center">
+                <ArrowUpRight className="w-3 h-3 mr-0.5" />
+                {trend}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-bcp-orange/10 to-bcp-brown/10 flex items-center justify-center">
-          <Icon size={24} className="text-bcp-brown" />
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm ${color.replace('text-', 'bg-').replace('-600', '-50 dark:bg-opacity-10')}`}>
+          <Icon size={24} className={color} />
         </div>
       </div>
     </div>
@@ -164,119 +167,123 @@ const DashboardPage = () => {
   const ActivityIcon = ({ type }: any) => {
     switch (type) {
       case 'user':
-        return <Users size={16} className="text-blue-600" />;
+        return <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-xl"><Users size={18} className="text-blue-600 dark:text-blue-400" /></div>;
       case 'partner':
-        return <FileText size={16} className="text-green-600" />;
+        return <div className="p-2 bg-green-50 dark:bg-green-500/10 rounded-xl"><FileText size={18} className="text-green-600 dark:text-green-400" /></div>;
       case 'role':
-        return <Shield size={16} className="text-purple-600" />;
+        return <div className="p-2 bg-purple-50 dark:bg-purple-500/10 rounded-xl"><Shield size={18} className="text-purple-600 dark:text-purple-400" /></div>;
       case 'approval':
-        return <Clock size={16} className="text-amber-600" />;
+        return <div className="p-2 bg-amber-50 dark:bg-amber-500/10 rounded-xl"><Clock size={18} className="text-amber-600 dark:text-amber-400" /></div>;
       default:
-        return <TrendingUp size={16} className="text-gray-600" />;
+        return <div className="p-2 bg-gray-50 dark:bg-gray-500/10 rounded-xl"><TrendingUp size={18} className="text-gray-600 dark:text-gray-400" /></div>;
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      success: 'bg-green-100 text-green-800',
-      pending: 'bg-amber-100 text-amber-800',
-      warning: 'bg-yellow-100 text-yellow-800',
-    };
-    return styles[status as keyof typeof styles] || styles.success;
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-          {user?.roleNames?.[0] && (
-            <span className="px-3 py-1 bg-bcp-orange/10 text-bcp-brown text-xs font-semibold rounded-lg border border-bcp-orange/20">
-              {ROLE_LABELS[user.roleNames[0]] || user.roleNames[0]}
-            </span>
-          )}
+    <div className="space-y-8 max-w-7xl mx-auto">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center space-x-4">
+          <div className="w-16 h-16 rounded-[2rem] bg-bcp-orange flex items-center justify-center shadow-xl shadow-bcp-orange/20 animate-float">
+            <Activity className="text-white w-8 h-8" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{t('Vue d\'ensemble', 'Overview')}</h1>
+              <span className="px-3 py-1 bg-bcp-orange/10 text-bcp-orange text-[10px] font-black uppercase tracking-widest rounded-full border border-bcp-orange/20">
+                {ROLE_LABELS[user?.roleNames?.[0] || ''] || user?.roleNames?.[0]}
+              </span>
+            </div>
+            <p className="text-gray-500 dark:text-dark-text-dim text-sm font-medium mt-0.5 flex items-center">
+              <Calendar className="w-4 h-4 mr-1.5" />
+              {t('Analyses d\'efficacité pour', 'Efficiency analytics for')} {user?.firstName || 'User'}
+            </p>
+          </div>
         </div>
-        <p className="text-gray-500 text-sm mt-1">
-          Welcome back, {user?.firstName || 'User'}
-        </p>
+        
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={loadDashboardData}
+            className="px-4 py-2 bg-white dark:bg-dark-bg-soft border border-gray-100 dark:border-dark-border rounded-xl text-xs font-bold text-gray-600 dark:text-dark-text-dim hover:border-bcp-orange transition-all flex items-center space-x-2 shadow-sm"
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>{t('Actualiser Sync', 'Refresh Sync')}</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
       <div className={`grid gap-6 ${isAdmin ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
         {isAdmin && (
           <>
-            <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="text-blue-600" />
-            <StatCard icon={Users} label="Active Users" value={stats.activeUsers} color="text-green-600" />
-            <StatCard icon={Shield} label="Active Roles" value={stats.activeRoles} color="text-purple-600" />
+            <StatCard icon={Users} label={t('Utilisateurs Globaux', 'Global Users')} value={stats.totalUsers} color="text-blue-600" trend="+12%" />
+            <StatCard icon={CheckCircle} label={t('Utilisateurs Actifs', 'Active Users')} value={stats.activeUsers} color="text-green-600" trend="+8%" />
+            <StatCard icon={Shield} label={t('Rôles Personnalisés', 'Custom Roles')} value={stats.activeRoles} color="text-purple-600" />
           </>
         )}
-        <StatCard icon={FileText} label="Total Partners" value={stats.totalPartners} color="text-indigo-600" />
-        <StatCard icon={Clock} label="Pending Approvals" value={stats.pendingApprovals} color="text-amber-600" />
-        {isAdmin && <StatCard icon={CheckCircle} label="Total Permissions" value={stats.totalPermissions} color="text-cyan-600" />}
+        <StatCard icon={FileText} label={t('Partenaires Enregistrés', 'Registered Partners')} value={stats.totalPartners} color="text-indigo-600" trend="+15%" />
+        <StatCard icon={Clock} label={t('En Attente d\'Approbation', 'Awaiting Approval')} value={stats.pendingApprovals} color="text-amber-600" />
+        {isAdmin && <StatCard icon={Shield} label={t('Permissions Système', 'System Permissions')} value={stats.totalPermissions} color="text-cyan-600" />}
       </div>
 
-      {/* Recent Activity Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="border-b border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-800">
-            {isAdmin ? 'Recent Activity' : 'Your Partners'}
-          </h2>
-          <p className="text-gray-600 text-sm mt-1">
-            {isAdmin ? 'Latest updates across the system' : 'Partners you can manage'}
-          </p>
-        </div>
-
-        <div className="divide-y divide-gray-200">
-          {loading ? (
-            <div className="p-6 text-center text-gray-500">Loading...</div>
-          ) : recentActivity.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              <TrendingUp size={32} className="mx-auto mb-2 opacity-50" />
-              <p>{isAdmin ? 'No recent activities' : 'No partners to display'}</p>
+      <div className="grid grid-cols-1 gap-8">
+        {/* Recent Activity Section */}
+        <div className="card-base overflow-hidden flex flex-col">
+          <div className="bg-gray-50/50 dark:bg-white/5 p-6 border-b border-gray-100 dark:border-dark-border flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
+                {isAdmin ? t('Pulse du Système', 'System Pulse') : t('Vos Partenaires Gérés', 'Your Managed Partners')}
+              </h2>
+              <p className="text-gray-500 dark:text-dark-text-dim text-xs font-medium">{t('Mises à jour en temps réel', 'Real-time status updates')}</p>
             </div>
-          ) : (
-            recentActivity.map((activity) => (
-              <div key={activity.id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="mt-1">
+            <button className="text-[10px] font-black text-bcp-orange uppercase tracking-widest hover:underline">{t('Tout Voir', 'View All')}</button>
+          </div>
+
+          <div className="flex-1 divide-y divide-gray-100 dark:divide-dark-border">
+            {loading ? (
+              <div className="p-12 text-center">
+                <div className="w-10 h-10 border-4 border-bcp-orange/20 border-t-bcp-orange rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-gray-400 text-sm font-medium">{t('Synchronisation des données...', 'Synchronizing system data...')}</p>
+              </div>
+            ) : recentActivity.length === 0 ? (
+              <div className="p-12 text-center text-gray-500">
+                <div className="w-20 h-20 bg-gray-50 dark:bg-dark-bg-soft rounded-full flex items-center justify-center mx-auto mb-6">
+                  <TrendingUp size={32} className="opacity-20" />
+                </div>
+                <p className="font-bold text-gray-400">{isAdmin ? t('Aucun signal détecté', 'No pulse detected yet') : t('Prêt à enrôler des partenaires', 'Ready to start enrolling partners')}</p>
+              </div>
+            ) : (
+              recentActivity.map((activity) => (
+                <div key={activity.id} className="p-6 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-all group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
                       <ActivityIcon type={activity.type} />
+                      <div>
+                        <p className="font-bold text-gray-900 dark:text-white group-hover:text-bcp-orange transition-colors">{activity.action}</p>
+                        <div className="flex items-center space-x-2 mt-0.5">
+                          <span className="text-xs font-medium text-gray-500 dark:text-dark-text-dim">{activity.entity}</span>
+                          <div className="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-600">{activity.timestamp}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-800">{activity.action}</p>
-                      <p className="text-gray-600 text-sm">{activity.entity}</p>
-                      <p className="text-gray-500 text-xs mt-1">{activity.timestamp}</p>
+                    <div className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                      activity.status === 'success' ? 'bg-green-50 dark:bg-green-500/10 text-green-600' :
+                      activity.status === 'pending' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600' :
+                      'bg-red-50 dark:bg-red-500/10 text-red-600'
+                    }`}>
+                      {activity.status}
                     </div>
                   </div>
-                  {isAdmin && (
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(activity.status)}`}>
-                      {activity.status.charAt(0).toUpperCase() + activity.status.slice(1)}
-                    </span>
-                  )}
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Info Box */}
-      <div className="rounded-xl p-6 border border-bcp-orange/20 bg-gradient-to-r from-bcp-orange/5 to-bcp-brown/5">
-        <div className="flex items-center gap-3 mb-2">
-          <Shield className="text-bcp-brown" size={20} />
-          <h3 className="font-semibold text-bcp-brown">
-            {isAdmin ? 'Administration' : 'Votre Profil'}
-          </h3>
-        </div>
-        <p className="text-bcp-brown/80 text-sm">
-          {isAdmin 
-            ? 'Vous avez un accès complet à la gestion des utilisateurs, rôles et permissions.'
-            : `Profil: ${ROLE_LABELS[user?.roleNames?.[0] || ''] || user?.roleNames?.[0] || 'Aucun rôle'}. Gérez les partenaires selon vos permissions.`}
-        </p>
       </div>
     </div>
   );
 };
 
 export default DashboardPage;
+

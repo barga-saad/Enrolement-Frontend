@@ -6,8 +6,14 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { LoginResponse, ApiError, ApiResponse } from '../types';
 import { storage } from '../utils/helpers';
+import { logger } from '../utils/logger';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const REQUEST_ID_HEADER = 'X-Request-Id';
+
+const generateRequestId = (): string => {
+  return `fe-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+};
 
 export const createApiClient = (): AxiosInstance => {
   const client = axios.create({
@@ -20,21 +26,70 @@ export const createApiClient = (): AxiosInstance => {
 
   // Request interceptor - Add auth token
   client.interceptors.request.use((config) => {
+    const requestId = generateRequestId();
+    (config as any).metadata = {
+      startedAt: Date.now(),
+      requestId,
+    };
+    config.headers[REQUEST_ID_HEADER] = requestId;
+
     const token = storage.get('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    logger.debug('Outgoing API request', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      requestId,
+    });
+
     return config;
   });
 
   // Response interceptor - Handle errors
   client.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      const metadata = (response.config as any).metadata as { startedAt?: number; requestId?: string } | undefined;
+      const durationMs = metadata?.startedAt ? Date.now() - metadata.startedAt : undefined;
+      const responseRequestId = response.headers?.['x-request-id'] || metadata?.requestId;
+
+      logger.info('API response received', {
+        method: response.config.method?.toUpperCase(),
+        url: response.config.url,
+        status: response.status,
+        durationMs,
+        requestId: responseRequestId,
+      });
+
+      return response;
+    },
     (error: AxiosError<ApiError>) => {
+      const config = error.config as any;
+      const metadata = config?.metadata as { startedAt?: number; requestId?: string } | undefined;
+      const durationMs = metadata?.startedAt ? Date.now() - metadata.startedAt : undefined;
+      const status = error.response?.status;
+
+      logger.error(
+        'API request failed',
+        {
+          method: config?.method?.toUpperCase(),
+          url: config?.url,
+          status,
+          durationMs,
+          requestId: error.response?.headers?.['x-request-id'] || metadata?.requestId,
+        },
+        error
+      );
+
       if (error.response?.status === 401) {
         // Token expired or invalid
         storage.remove('authToken');
         storage.remove('user');
+        logger.warn('Session expired, redirecting to login', {
+          url: config?.url,
+          requestId: metadata?.requestId,
+        });
         window.location.href = '/login';
       }
       return Promise.reject(error);

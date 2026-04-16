@@ -15,6 +15,7 @@ import RolesPage from './components/pages/RolesPage';
 import PartnersPage from './components/pages/PartnersPage';
 import AuditLogPage from './components/pages/AuditLogPage';
 import ChangePasswordPage from './components/pages/ChangePasswordPage';
+import NoRolePage from './components/pages/NoRolePage';
 
 // Components
 import Layout from './components/layout/Layout';
@@ -37,7 +38,10 @@ const UnauthorizedPage = () => (
 import { Loader } from './components/common/Loader';
 
 function App() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, requiresPasswordChange } = useAuth();
+
+  const roleNames = user?.roleNames?.filter((role) => role && role.trim().length > 0) || [];
+  const hasNoRole = isAuthenticated && !requiresPasswordChange && roleNames.length === 0;
 
   // Check if user is admin (PROFIL_ADMIN_CENTRAL)
   const isAdmin = user?.roleNames?.some(
@@ -63,51 +67,55 @@ function App() {
             path="/*"
             element={
               isAuthenticated ? (
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<DashboardPage />} />
-                    <Route path="/dashboard" element={<DashboardPage />} />
-                    <Route path="/partners" element={<PartnersPage key="partners-list" />} />
-                    <Route path="/partners/new" element={<PartnersPage key="partners-new" initialMode="create" />} />
-                    <Route path="/partners/edit" element={<PartnersPage key="partners-edit" initialMode="edit" />} />
-                    <Route path="/partners/validate" element={<PartnersPage key="partners-validate" initialMode="validate" />} />
-                    <Route path="/partners/consult" element={<PartnersPage key="partners-consult" initialMode="consult" />} />
-                    
-                    {/* Admin-only pages */}
-                    <Route
-                      path="/users"
-                      element={
-                        isAdmin ? (
-                          <UsersPage />
-                        ) : (
-                          <UnauthorizedPage />
-                        )
-                      }
-                    />
-                    <Route
-                      path="/roles"
-                      element={
-                        isAdmin ? (
-                          <RolesPage />
-                        ) : (
-                          <UnauthorizedPage />
-                        )
-                      }
-                    />
-                    <Route
-                      path="/audit"
-                      element={
-                        isAdmin ? (
-                          <AuditLogPage />
-                        ) : (
-                          <UnauthorizedPage />
-                        )
-                      }
-                    />
-                    
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Layout>
+                hasNoRole ? (
+                  <NoRolePage />
+                ) : (
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<DashboardPage />} />
+                      <Route path="/dashboard" element={<DashboardPage />} />
+                      <Route path="/partners" element={<PartnersPage key="partners-list" />} />
+                      <Route path="/partners/new" element={<PartnersPage key="partners-new" initialMode="create" />} />
+                      <Route path="/partners/edit" element={<PartnersPage key="partners-edit" initialMode="edit" />} />
+                      <Route path="/partners/validate" element={<PartnersPage key="partners-validate" initialMode="validate" />} />
+                      <Route path="/partners/consult" element={<PartnersPage key="partners-consult" initialMode="consult" />} />
+                      
+                      {/* Admin-only pages */}
+                      <Route
+                        path="/users"
+                        element={
+                          isAdmin ? (
+                            <UsersPage />
+                          ) : (
+                            <UnauthorizedPage />
+                          )
+                        }
+                      />
+                      <Route
+                        path="/roles"
+                        element={
+                          isAdmin ? (
+                            <RolesPage />
+                          ) : (
+                            <UnauthorizedPage />
+                          )
+                        }
+                      />
+                      <Route
+                        path="/audit"
+                        element={
+                          isAdmin ? (
+                            <AuditLogPage />
+                          ) : (
+                            <UnauthorizedPage />
+                          )
+                        }
+                      />
+                      
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </Layout>
+                )
               ) : (
                 <Navigate to="/login" replace />
               )

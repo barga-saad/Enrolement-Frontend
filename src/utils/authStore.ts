@@ -13,6 +13,7 @@ import { create } from 'zustand';
 import { AuthState, User } from '../types';
 import { storage } from '../utils/helpers';
 import { apiService } from '../services/api';
+import { logger } from './logger';
 
 interface AuthStore extends AuthState {
   setToken: (token: string) => void;
@@ -42,6 +43,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   login: async (username: string, password: string) => {
     set({ isLoading: true, error: null, requiresPasswordChange: false });
     try {
+      logger.info('Login attempt started', { username });
       const response = await apiService.login(username, password);
       const loginData = response.data.data;
 
@@ -64,6 +66,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       // Temp password user: Keycloak won't issue a token, but we still
       // need to redirect to /change-password
       if (requiresPasswordChange && !loginData?.token) {
+        logger.warn('Temporary password flow detected', { username });
         set({
           token: null,
           user,
@@ -91,9 +94,20 @@ export const useAuthStore = create<AuthStore>((set) => ({
       storage.set('authToken', loginData.token);
       storage.set('user', user);
       storage.set('requiresPasswordChange', requiresPasswordChange);
+
+      logger.info('Login successful', {
+        username,
+        roleCount: user.roleNames.length,
+        requiresPasswordChange,
+      });
+
+      if (user.roleNames.length === 0) {
+        logger.warn('User has no assigned roles after login', { username });
+      }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Login failed';
       set({ error: errorMessage, isLoading: false, isAuthenticated: false });
+      logger.error('Login failed', { username, errorMessage }, error);
       throw error;
     }
   },
@@ -101,6 +115,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   changePassword: async (username: string, newPassword: string) => {
     set({ isLoading: true, error: null });
     try {
+      logger.info('Password change started', { username });
       await apiService.changePassword(username, newPassword);
       // Auto-login to get the proper token after password change
       const response = await apiService.login(username, newPassword);
@@ -135,9 +150,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
       storage.set('authToken', loginData.token);
       storage.set('user', user);
       storage.set('requiresPasswordChange', false);
+
+      logger.info('Password changed successfully', { username });
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update access credentials';
       set({ error: errorMessage, isLoading: false });
+      logger.error('Password change failed', { username, errorMessage }, error);
       throw error;
     }
   },
@@ -145,8 +163,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
   logout: async () => {
     try {
       await apiService.logout();
+      logger.info('Logout completed');
     } catch (_) {
       // non-critical
+      logger.warn('Logout endpoint failed, clearing local session anyway');
     } finally {
       set({ token: null, user: null, isAuthenticated: false, error: null, requiresPasswordChange: false });
       storage.remove('authToken');
@@ -162,6 +182,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     if (token && user) {
       set({ token, user, isAuthenticated: true, requiresPasswordChange });
+      logger.debug('Auth state hydrated from storage', {
+        username: user.username,
+        roleCount: user.roleNames?.length || 0,
+      });
     }
   },
 
@@ -187,8 +211,13 @@ export const useAuthStore = create<AuthStore>((set) => ({
       };
       set({ user });
       storage.set('user', user);
+      logger.debug('User profile refreshed', {
+        username: user.username,
+        roleCount: user.roleNames.length,
+      });
     } catch (_) {
       // silent — stale cache is better than breaking the app
+      logger.warn('Failed to refresh current user profile from backend');
     }
   },
 }));

@@ -1,0 +1,360 @@
+/* ========== ROOT ========== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --orange:       #E8630A;
+  --orange-light: #FF7A20;
+  --orange-dark:  #C4520A;
+  --orange-glow:  rgba(232,99,10,0.3);
+  --bg:           #0D0D0D;
+  --bg2:          #111111;
+  --bg3:          #1A1A1A;
+  --border:       rgba(255,255,255,0.07);
+  --white:        #FFFFFF;
+  --gray:         #9E9E9E;
+  --gray-light:   #E0E0E0;
+  --green:        #22c55e;
+  --transition:   all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--white);
+}
+
+/* ========== ROOT LAYOUT ========== */
+.wa-root {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ========== FORMES FOND ========== */
+.wa-bg-shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wa-shape-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(232,99,10,0.12), transparent);
+  top: -150px; left: -150px;
+}
+
+.wa-shape-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(232,99,10,0.08), transparent);
+  bottom: -100px; right: -100px;
+}
+
+.wa-shape-3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(255,122,32,0.06), transparent);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ========== CARD ========== */
+.wa-card {
+  position: relative; z-index: 1;
+  background: var(--bg3);
+  border: 1px solid rgba(232,99,10,0.2);
+  border-radius: 24px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow:
+    0 0 0 1px rgba(232,99,10,0.05),
+    0 20px 60px rgba(0,0,0,0.5),
+    0 0 80px rgba(232,99,10,0.05);
+  animation: waSlideUp 0.5s ease;
+}
+
+@keyframes waSlideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== LOGO ========== */
+.wa-logo-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.wa-logo {
+  width: 140px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 16px rgba(232,99,10,0.35));
+}
+
+/* ========== ICÔNE ANIMÉE ========== */
+.wa-icon-wrapper {
+  position: relative;
+  width: 100px; height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.5rem 0;
+}
+
+.wa-icon-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(232,99,10,0.3);
+  animation: waRingPulse 2.5s ease-in-out infinite;
+}
+
+.wa-ring-1 { width: 100px; height: 100px; animation-delay: 0s;    }
+.wa-ring-2 { width: 75px;  height: 75px;  animation-delay: 0.4s;  }
+.wa-ring-3 { width: 50px;  height: 50px;  animation-delay: 0.8s;  border-color: rgba(232,99,10,0.5); }
+
+@keyframes waRingPulse {
+  0%,100% { transform: scale(1);    opacity: 0.5; }
+  50%      { transform: scale(1.08); opacity: 1;   }
+}
+
+.wa-icon-center {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 25px var(--orange-glow);
+  z-index: 1;
+  animation: waIconGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes waIconGlow {
+  0%,100% { box-shadow: 0 0 20px var(--orange-glow); }
+  50%      { box-shadow: 0 0 40px rgba(232,99,10,0.6); }
+}
+
+.wa-icon-center svg {
+  width: 26px; height: 26px;
+  stroke: var(--white);
+}
+
+/* ========== TEXTE ========== */
+.wa-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--white);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.wa-subtitle {
+  font-size: 0.88rem;
+  color: var(--gray);
+  text-align: center;
+  line-height: 1.7;
+  max-width: 400px;
+}
+
+/* ========== ÉTAPES ========== */
+.wa-steps {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.2rem 1.5rem;
+}
+
+.wa-step {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.wa-step-connector {
+  width: 2px; height: 24px;
+  background: var(--border);
+  margin-left: 19px;
+}
+
+.wa-step-connector-done {
+  background: linear-gradient(180deg, var(--green), var(--orange));
+}
+
+/* Icône étape */
+.wa-step-icon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.wa-step-icon svg { width: 16px; height: 16px; stroke: var(--gray); }
+
+/* Étape terminée */
+.wa-step-done .wa-step-icon {
+  border-color: var(--green);
+  background: rgba(34,197,94,0.1);
+}
+.wa-step-done .wa-step-icon svg { stroke: var(--green); }
+.wa-step-done .wa-step-title { color: var(--green); }
+
+/* Étape active */
+.wa-step-active .wa-step-icon {
+  border-color: var(--orange);
+  background: rgba(232,99,10,0.1);
+}
+.wa-step-active .wa-step-icon svg { stroke: var(--orange); }
+.wa-step-active .wa-step-title { color: var(--orange); }
+
+/* Pulse sur étape active */
+.wa-step-icon-pulse {
+  animation: waIconPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes waIconPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(232,99,10,0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(232,99,10,0); }
+}
+
+/* Étape en attente */
+.wa-step-pending .wa-step-icon { opacity: 0.4; }
+.wa-step-pending .wa-step-title { color: var(--gray); opacity: 0.5; }
+
+/* Texte étape */
+.wa-step-text {
+  display: flex; flex-direction: column; gap: 0.15rem;
+}
+
+.wa-step-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.wa-step-desc {
+  font-size: 0.75rem;
+  color: var(--gray);
+}
+
+/* ========== USER INFO ========== */
+.wa-user-info {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+}
+
+.wa-user-avatar {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 700;
+  color: var(--white); flex-shrink: 0;
+  box-shadow: 0 0 14px var(--orange-glow);
+}
+
+.wa-user-details {
+  display: flex; flex-direction: column; gap: 0.2rem;
+  flex: 1; min-width: 0;
+}
+
+.wa-user-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--white);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.wa-user-email {
+  font-size: 0.75rem;
+  color: var(--gray);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.wa-user-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--orange);
+  background: rgba(232,99,10,0.1);
+  border: 1px solid rgba(232,99,10,0.25);
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ========== AUTO CHECK ========== */
+.wa-auto-check {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--gray);
+}
+
+.wa-spinner-small {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(232,99,10,0.3);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: waSpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes waSpin { to { transform: rotate(360deg); } }
+
+/* ========== LOGOUT BTN ========== */
+.wa-logout-btn {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 10px 24px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--gray);
+  font-family: inherit; font-size: 0.88rem;
+  cursor: pointer; transition: var(--transition);
+}
+
+.wa-logout-btn svg { width: 16px; height: 16px; }
+.wa-logout-btn:hover {
+  border-color: rgba(239,68,68,0.4);
+  color: #ef4444;
+  background: rgba(239,68,68,0.06);
+}
+
+/* ========== FOOTER ========== */
+.wa-footer {
+  font-size: 0.72rem;
+  color: rgba(158,158,158,0.5);
+  text-align: center;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 560px) {
+  .wa-card { padding: 1.8rem 1.2rem; }
+  .wa-title { font-size: 1.1rem; }
+}

@@ -9,9 +9,9 @@ interface AuditLog {
   entityType: string;
   entityId: number;
   action: string;
-  performedBy: string;
-  details?: string;
-  createdAt: string;
+  username: string;
+  description?: string;
+  timestamp: string;
 }
 
 const AuditLogPage = () => {
@@ -64,10 +64,10 @@ const AuditLogPage = () => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
-      (log.performedBy || '').toLowerCase().includes(term) ||
+      (log.username || '').toLowerCase().includes(term) ||
       (log.action || '').toLowerCase().includes(term) ||
       (log.entityType || '').toLowerCase().includes(term) ||
-      (log.details || '').toLowerCase().includes(term)
+      (log.description || '').toLowerCase().includes(term)
     );
   });
 
@@ -170,10 +170,10 @@ const AuditLogPage = () => {
                 filteredLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-orange-50/20 dark:hover:bg-bcp-orange/5 transition-colors">
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-400 font-mono text-xs">
-                      {new Date(log.createdAt).toLocaleString('fr-FR')}
+                      {log.timestamp ? new Date(log.timestamp).toLocaleString('fr-FR') : '—'}
                     </td>
                     <td className="px-6 py-4 font-bold text-gray-800 dark:text-gray-200">
-                      {log.performedBy}
+                      {log.username || '—'}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border ${getActionColor(log.action)}`}>
@@ -187,7 +187,7 @@ const AuditLogPage = () => {
                       {log.entityId}
                     </td>
                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs max-w-xs truncate">
-                      {log.details || '—'}
+                      {log.description || '—'}
                     </td>
                   </tr>
                 ))

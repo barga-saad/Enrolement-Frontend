@@ -200,7 +200,7 @@ export const apiService = {
     apiClient.post('/v1/create/partners', data),
 
   updatePartner: (id: string, data: any) =>
-    apiClient.put('/v1/update/partners', { ...data, id }),
+    apiClient.put('/v1/update/partners', data),
 
   deletePartner: (id: string) =>
     apiClient.delete('/v1/delete/partners', { params: { partnerReferenceNumber: id } }),

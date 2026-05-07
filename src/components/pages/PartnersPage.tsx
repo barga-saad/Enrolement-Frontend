@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Eye, Check, X, Edit2, Search, Filter, Download, Shield, FileText, Save, Send, AlertTriangle } from 'lucide-react';
+import { Plus, Eye, Check, X, Edit2, Search, Filter, Download, Shield, FileText, Save, Send, AlertTriangle, Building2, User } from 'lucide-react';
 import { FormInput, FormSelect, FormSection, FormBlock } from '../common/FormComponents';
 import { Table, TableColumn } from '../common/Table';
 import { Toggle } from '../common/Toggle';
@@ -162,7 +162,7 @@ const DEFAULT_FORM: Partial<Partner> = {
   commissionRateWallet: 0,
 };
 
-type ViewMode = 'list' | 'create' | 'edit' | 'validate' | 'consult' | 'drafts' | 'resume-draft';
+type ViewMode = 'list' | 'choose-type' | 'create' | 'edit' | 'validate' | 'consult' | 'drafts' | 'resume-draft';
 
 interface PartnersPageProps {
   initialMode?: 'create' | 'edit' | 'validate' | 'consult' | 'drafts';
@@ -180,7 +180,7 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   const { user } = useAuth();
   const { lang: _lang } = useLangStore();
   const [viewMode, setViewMode] = useState<ViewMode>(
-    initialMode === 'create' ? 'create' :
+    initialMode === 'create' ? 'choose-type' :
     initialMode === 'drafts' ? 'drafts' :
     'list'
   );
@@ -767,6 +767,79 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   }
 
   // ═══════════════════════════════════════════════════
+  //  ENROLLMENT TYPE SELECTION VIEW
+  // ═══════════════════════════════════════════════════
+  if (viewMode === 'choose-type') {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-10 animate-fadeIn">
+        <div className="text-center">
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+            {t('Nouvel Enrôlement', 'New Enrollment')}
+          </h1>
+          <p className="text-gray-500 dark:text-dark-text-dim text-sm font-medium mt-2">
+            {t('Sélectionnez le type de profil à enrôler', 'Select the type of profile to enroll')}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+          {/* PARTNER */}
+          <button
+            onClick={() => {
+              setFormData({ ...DEFAULT_FORM, enrollmentType: 'PARTNER' });
+              setFormErrors({});
+              setViewMode('create');
+            }}
+            className="group flex flex-col items-center text-center p-10 bg-white dark:bg-dark-bg-card rounded-[2rem] border-2 border-gray-100 dark:border-dark-border shadow-lg hover:border-bcp-orange hover:shadow-bcp-orange/10 hover:shadow-2xl transition-all duration-200 cursor-pointer"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-bcp-orange/10 group-hover:bg-bcp-orange flex items-center justify-center mb-5 transition-colors">
+              <Building2 className="w-8 h-8 text-bcp-orange group-hover:text-white transition-colors" />
+            </div>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">
+              {t('Partenaire', 'Partner')}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-dark-text-dim leading-relaxed">
+              {t(
+                'Entreprise ou organisation partenaire avec accords de transfert et de commission',
+                'Business or organization with transfer agreements and commission structures'
+              )}
+            </p>
+          </button>
+
+          {/* CLIENT */}
+          <button
+            onClick={() => {
+              setFormData({ ...DEFAULT_FORM, enrollmentType: 'CLIENT' });
+              setFormErrors({});
+              setViewMode('create');
+            }}
+            className="group flex flex-col items-center text-center p-10 bg-white dark:bg-dark-bg-card rounded-[2rem] border-2 border-gray-100 dark:border-dark-border shadow-lg hover:border-bcp-brown hover:shadow-bcp-brown/10 hover:shadow-2xl transition-all duration-200 cursor-pointer"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-bcp-brown/10 group-hover:bg-bcp-brown flex items-center justify-center mb-5 transition-colors">
+              <User className="w-8 h-8 text-bcp-brown group-hover:text-white transition-colors" />
+            </div>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">
+              {t('Client', 'Client')}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-dark-text-dim leading-relaxed">
+              {t(
+                'Client individuel ou corporate souscrivant aux services de transfert',
+                'Individual or corporate client subscribing to transfer services'
+              )}
+            </p>
+          </button>
+        </div>
+
+        <button
+          onClick={resetForm}
+          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+        >
+          {t('Annuler', 'Cancel')}
+        </button>
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
   //  CREATE / EDIT FORM VIEW
   // ═══════════════════════════════════════════════════
   if (viewMode === 'create' || viewMode === 'edit' || viewMode === 'resume-draft') {
@@ -776,13 +849,17 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
           <div>
             <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
               {viewMode === 'create'
-                ? t('Enrôlement Partenaire', 'Partner Enrollment')
+                ? (formData.enrollmentType === 'CLIENT'
+                    ? t('Enrôlement Client', 'Client Enrollment')
+                    : t('Enrôlement Partenaire', 'Partner Enrollment'))
                 : viewMode === 'resume-draft'
                   ? t('Reprendre le Brouillon', 'Resume Draft')
                   : t('Modification Partenaire', 'Update Partner')}
             </h1>
             <p className="text-gray-500 dark:text-dark-text-dim text-sm font-medium">
-              {t('Paramétrage conforme du profil partenaire', 'Compliance-driven partner setup')}
+              {formData.enrollmentType === 'CLIENT'
+                ? t('Profil client — services de transfert', 'Client profile — transfer services')
+                : t('Paramétrage conforme du profil partenaire', 'Compliance-driven partner setup')}
             </p>
           </div>
           <button
@@ -802,11 +879,10 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
             <FormBlock title={t('ID Système & Statut', 'System ID & Status')} bgColor="gray">
               <FormInput
                 label={t('Numéro de Référence Partenaire', 'Partner Reference Number')}
-                required
                 value={formData.partnerReferenceNumber || ''}
-                onChange={(e) => updateForm('partnerReferenceNumber', e.target.value)}
-                error={formErrors.partnerReferenceNumber || undefined}
-                placeholder="ex: 042999"
+                onChange={() => {}}
+                disabled
+                placeholder={t('Auto-généré par le système', 'Auto-generated by system')}
               />
               <div className="grid grid-cols-2 gap-4">
                 <FormSelect
@@ -953,7 +1029,7 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
           </FormSection>
 
           {/* ── SECTION 3: TRANSFERTS ── */}
-          <FormSection title={t('Permissions & Limites de Transfert', 'Transfer Permissions & Limits')} subtitle={t('Types de transfert autorisés et limites journalières', 'Allowed transfer types and daily limits')}>
+          {formData.enrollmentType !== 'CLIENT' && <FormSection title={t('Permissions & Limites de Transfert', 'Transfer Permissions & Limits')} subtitle={t('Types de transfert autorisés et limites journalières', 'Allowed transfer types and daily limits')}>
             <div className="col-span-full card-base overflow-hidden border border-gray-100 dark:border-dark-border">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-dark-border">
@@ -1005,10 +1081,10 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
                 />
               </div>
             </FormBlock>
-          </FormSection>
+          </FormSection>}
 
           {/* ── SECTION 4: COMMISSIONS ── */}
-          <FormSection title={t('Paramètres de Commission', 'Commission Settings')} subtitle={t('Configuration des commissions par type de transfert', 'Per-transfer-type commission configuration')}>
+          {formData.enrollmentType !== 'CLIENT' && <FormSection title={t('Paramètres de Commission', 'Commission Settings')} subtitle={t('Configuration des commissions par type de transfert', 'Per-transfer-type commission configuration')}>
             <div className="col-span-full card-base overflow-hidden border border-gray-100 dark:border-dark-border">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-dark-border">
@@ -1064,7 +1140,7 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
                 </tbody>
               </table>
             </div>
-          </FormSection>
+          </FormSection>}
 
           {/* ── SECTION 5: CHANGE & TARIFS ── */}
           <FormSection title={t('Change & Tarification', 'Exchange & Tariff')} subtitle={t('Taux de change et conditions tarifaires', 'Exchange rates and fee conditions')}>

@@ -16,6 +16,9 @@ interface Partner {
   partnerReferenceNumber: string;
   partnerType: string;
   partnerStatus: string;
+  workflowStatus?: string;       // DRAFT | PENDING | VALIDATED | REJECTED
+  enrollmentType?: string;
+  createdBy?: string;
   headquarterCountry: string;
   parentCompanyCountry?: string;
   classification: string;
@@ -159,10 +162,10 @@ const DEFAULT_FORM: Partial<Partner> = {
   commissionRateWallet: 0,
 };
 
-type ViewMode = 'list' | 'create' | 'edit' | 'validate' | 'consult';
+type ViewMode = 'list' | 'create' | 'edit' | 'validate' | 'consult' | 'drafts' | 'resume-draft';
 
 interface PartnersPageProps {
-  initialMode?: 'create' | 'edit' | 'validate' | 'consult';
+  initialMode?: 'create' | 'edit' | 'validate' | 'consult' | 'drafts';
 }
 
 const WORKFLOW_BADGES: Record<string, { bg: string; text: string; labelFr: string; labelEn: string }> = {
@@ -176,9 +179,14 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   const toast = useToast();
   const { user } = useAuth();
   const { lang: _lang } = useLangStore();
-  const [viewMode, setViewMode] = useState<ViewMode>(initialMode === 'create' ? 'create' : 'list');
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    initialMode === 'create' ? 'create' :
+    initialMode === 'drafts' ? 'drafts' :
+    'list'
+  );
   const [partners, setPartners] = useState<Partner[]>([]);
   const [pendingValidations, setPendingValidations] = useState<ValidationRecord[]>([]);
+  const [draftValidations, setDraftValidations] = useState<ValidationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [selectedValidation, setSelectedValidation] = useState<ValidationRecord | null>(null);
@@ -196,6 +204,8 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   useEffect(() => {
     if (initialMode === 'validate') {
       fetchPendingValidations();
+    } else if (initialMode === 'drafts') {
+      fetchDraftValidations();
     } else if (initialMode !== 'create') {
       fetchPartners();
     } else {
@@ -231,19 +241,36 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
     }
   };
 
+  const fetchDraftValidations = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getDraftValidations();
+      const data = response.data.data || response.data;
+      setDraftValidations(Array.isArray(data) ? data : []);
+    } catch (error: any) {
+      console.error('Error loading draft validations:', error);
+      setDraftValidations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const validationRules = {
     name: [validators.required(t('Nom du partenaire', 'Partner name')), validators.minLength(3)],
     accountNumber: [validators.required(t('Numéro de compte', 'Account number')), validators.bankAccount()],
     headquarterCountry: [validators.required(t('Pays', 'Country'))],
     classification: [validators.required(t('Classification', 'Classification'))],
-    partnerReferenceNumber: [validators.required(t('Numéro de référence', 'Reference number'))],
   };
 
   const filteredPartners = partners.filter((p) => {
     const matchesSearch =
       (p.partnerReferenceNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (p.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    // Modification page: only show VALIDATED partners (drafts have their own page)
+    const matchesWorkflow = initialMode === 'edit'
+      ? (p.workflowStatus === 'VALIDATED' || !p.workflowStatus)
+      : true;
+    return matchesSearch && matchesWorkflow;
   });
 
   const filteredValidations = pendingValidations.filter((v) => {
@@ -277,6 +304,14 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
           toast.success(t('Partenaire créé avec succès', 'Partner created successfully'));
         }
         resetForm();
+      } else if (viewMode === 'resume-draft' && selectedPartner?.id) {
+        await apiService.submitForValidation(selectedPartner.id);
+        toast.success(t('Brouillon soumis pour validation', 'Draft submitted for validation'));
+        setViewMode('drafts');
+        setSelectedPartner(null);
+        setFormData({ ...DEFAULT_FORM });
+        setFormErrors({});
+        await fetchDraftValidations();
       } else if (viewMode === 'edit' && selectedPartner?.id) {
         await apiService.updatePartner(String(selectedPartner.id), formData);
         toast.success(t('Partenaire mis à jour et soumis pour validation', 'Partner updated and submitted for validation'));
@@ -289,19 +324,15 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   };
 
   const handleSaveDraft = async () => {
-    if (!validateFormData()) {
-      toast.error(t('Veuillez corriger les erreurs de validation', 'Please fix validation errors'));
+    if (!formData.name || String(formData.name).trim().length < 3) {
+      toast.error(t('Le nom du partenaire est requis (min. 3 caractères)', 'Partner name is required (min. 3 chars)'));
       return;
     }
-
     try {
       if (viewMode === 'create') {
-        const response = await apiService.createPartner(formData);
-        const created = response.data?.data || response.data;
-        if (created?.id) {
-          await apiService.saveDraft(created.id);
-        }
-        toast.success(t('Brouillon sauvegardé', 'Draft saved'));
+        await apiService.createPartner(formData);
+        // Backend auto-creates a DRAFT validation record — no separate call needed
+        toast.success(t('Brouillon sauvegardé avec succès', 'Draft saved successfully'));
         resetForm();
       }
     } catch (error: any) {
@@ -311,20 +342,17 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
 
   const handleValidate = async (validationId: number) => {
     try {
-      const response = await apiService.validatePartner(validationId);
-      const result = response.data;
-      if (result?.message?.includes('FOUR_EYES')) {
-        toast.error(t('Vous ne pouvez pas valider votre propre saisie (principe des 4 yeux)', 'You cannot validate your own entry (4-eyes principle)'));
-        return;
-      }
+      await apiService.validatePartner(validationId);
       toast.success(t('Partenaire validé avec succès', 'Partner validated successfully'));
       setViewMode('list');
       setSelectedPartner(null);
       setSelectedValidation(null);
       await fetchPendingValidations();
     } catch (error: any) {
-      const msg = error.response?.data?.message || '';
-      if (msg.includes('FOUR_EYES')) {
+      const apiError = error.response?.data;
+      const errorCode = apiError?.error?.errorCode || '';
+      const msg = apiError?.error?.errorMessage || apiError?.message || '';
+      if (errorCode === 'FOUR_EYES_VIOLATION' || msg.includes('FOUR_EYES')) {
         toast.error(t('Vous ne pouvez pas valider votre propre saisie (principe des 4 yeux)', 'You cannot validate your own entry (4-eyes principle)'));
       } else {
         toast.error(msg || t('Échec de la validation', 'Validation failed'));
@@ -347,8 +375,10 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
       setSelectedValidation(null);
       await fetchPendingValidations();
     } catch (error: any) {
-      const msg = error.response?.data?.message || '';
-      if (msg.includes('FOUR_EYES')) {
+      const apiError = error.response?.data;
+      const errorCode = apiError?.error?.errorCode || '';
+      const msg = apiError?.error?.errorMessage || apiError?.message || '';
+      if (errorCode === 'FOUR_EYES_VIOLATION' || msg.includes('FOUR_EYES')) {
         toast.error(t('Vous ne pouvez pas rejeter votre propre saisie (principe des 4 yeux)', 'You cannot reject your own entry (4-eyes principle)'));
       } else {
         toast.error(msg || t('Échec du rejet', 'Rejection failed'));
@@ -398,13 +428,38 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
 
   const openValidatePartner = async (validation: ValidationRecord) => {
     try {
-      const response = await apiService.getPartner(String(validation.partnerId));
+      const response = await apiService.getPartner(validation.partnerReferenceNumber);
       const partner = response.data?.data || response.data;
       setSelectedPartner(partner);
       setSelectedValidation(validation);
       setViewMode('validate');
     } catch {
       toast.error(t('Impossible de charger le partenaire', 'Failed to load partner'));
+    }
+  };
+
+  const openDraftPartner = async (draft: ValidationRecord) => {
+    try {
+      const response = await apiService.getPartner(draft.partnerReferenceNumber);
+      const partner = response.data?.data || response.data;
+      setSelectedPartner(partner);
+      setFormData({ ...partner });
+      setFormErrors({});
+      setViewMode('resume-draft');
+    } catch {
+      toast.error(t('Impossible de charger le brouillon', 'Failed to load draft'));
+    }
+  };
+
+  const submitDraftDirectly = async (draft: ValidationRecord) => {
+    try {
+      await apiService.submitForValidation(draft.partnerId);
+      toast.success(t('Brouillon soumis pour validation', 'Draft submitted for validation'));
+      await fetchDraftValidations();
+    } catch (error: any) {
+      const apiError = error.response?.data;
+      const msg = apiError?.error?.errorMessage || apiError?.message || '';
+      toast.error(msg || t('Échec de la soumission', 'Submission failed'));
     }
   };
 
@@ -487,6 +542,98 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
                   title={t('Examiner', 'Review')}
                 >
                   <Eye size={18} />
+                </button>
+              </div>
+            )}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  DRAFTS LIST VIEW
+  // ═══════════════════════════════════════════════════
+  if (initialMode === 'drafts' && viewMode === 'drafts') {
+    const filteredDrafts = draftValidations.filter((d) =>
+      (d.partnerReferenceNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (d.partnerName || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const draftColumns: TableColumn<ValidationRecord>[] = [
+      { key: 'partnerReferenceNumber' as any, header: t('Référence', 'Reference'), sortable: true },
+      {
+        key: 'partnerName' as any,
+        header: t('Désignation', 'Designation'),
+        sortable: true,
+        render: (name: string) => <span className="font-bold text-gray-900 dark:text-white">{name}</span>,
+      },
+      { key: 'createdBy' as any, header: t('Saisi par', 'Created by'), sortable: true },
+      {
+        key: 'createdAt' as any,
+        header: t('Date', 'Date'),
+        sortable: true,
+        render: (date: string) => new Date(date).toLocaleDateString('fr-FR'),
+      },
+      {
+        key: 'workflowStatus' as any,
+        header: t('Statut', 'Status'),
+        render: () => (
+          <span className="px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-500/10 dark:text-blue-400">
+            {t('Brouillon', 'Draft')}
+          </span>
+        ),
+      },
+    ];
+
+    return (
+      <div className="space-y-8 animate-fadeIn">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+              {t('Mes Brouillons', 'My Drafts')}
+            </h1>
+            <p className="text-gray-500 dark:text-dark-text-dim text-sm font-medium mt-1">
+              {t('Demandes enregistrées en brouillon — à soumettre pour validation', 'Requests saved as draft — submit for validation when ready')}
+            </p>
+          </div>
+        </div>
+
+        <div className="card-base p-2 bg-white/50 dark:bg-dark-bg-soft/50 backdrop-blur-md">
+          <div className="flex flex-col md:flex-row items-center gap-4 p-4">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-bcp-orange transition-colors" size={18} />
+              <input
+                type="text"
+                placeholder={t('Rechercher par référence ou désignation...', 'Search by reference or designation...')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-white dark:bg-dark-bg border border-gray-100 dark:border-dark-border rounded-[1.25rem] focus:ring-4 focus:ring-bcp-orange/10 focus:border-bcp-orange outline-none transition-all text-sm"
+              />
+            </div>
+          </div>
+
+          <Table
+            columns={draftColumns}
+            data={filteredDrafts}
+            keyField="id"
+            loading={loading}
+            emptyMessage={loading ? t('Chargement...', 'Loading...') : t('Aucun brouillon trouvé', 'No drafts found')}
+            actions={(row) => (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => openDraftPartner(row)}
+                  className="p-2 bg-orange-50 dark:bg-bcp-orange/10 rounded-xl text-bcp-orange hover:bg-orange-100 transition-all"
+                  title={t('Reprendre', 'Resume')}
+                >
+                  <Edit2 size={18} />
+                </button>
+                <button
+                  onClick={() => submitDraftDirectly(row)}
+                  className="p-2 bg-green-50 dark:bg-green-500/10 rounded-xl text-green-500 hover:text-green-600 hover:bg-green-100 transition-all"
+                  title={t('Soumettre pour validation', 'Submit for validation')}
+                >
+                  <Send size={18} />
                 </button>
               </div>
             )}
@@ -622,19 +769,28 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   // ═══════════════════════════════════════════════════
   //  CREATE / EDIT FORM VIEW
   // ═══════════════════════════════════════════════════
-  if (viewMode === 'create' || viewMode === 'edit') {
+  if (viewMode === 'create' || viewMode === 'edit' || viewMode === 'resume-draft') {
     return (
       <div className="space-y-8 max-w-6xl mx-auto animate-slideUp">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-              {viewMode === 'create' ? t('Enrôlement Partenaire', 'Partner Enrollment') : t('Modification Partenaire', 'Update Partner')}
+              {viewMode === 'create'
+                ? t('Enrôlement Partenaire', 'Partner Enrollment')
+                : viewMode === 'resume-draft'
+                  ? t('Reprendre le Brouillon', 'Resume Draft')
+                  : t('Modification Partenaire', 'Update Partner')}
             </h1>
             <p className="text-gray-500 dark:text-dark-text-dim text-sm font-medium">
               {t('Paramétrage conforme du profil partenaire', 'Compliance-driven partner setup')}
             </p>
           </div>
-          <button onClick={resetForm} className="p-3 text-gray-400 hover:text-red-500 transition-colors">
+          <button
+            onClick={viewMode === 'resume-draft'
+              ? () => { setViewMode('drafts'); setSelectedPartner(null); setFormData({...DEFAULT_FORM}); setFormErrors({}); }
+              : resetForm}
+            className="p-3 text-gray-400 hover:text-red-500 transition-colors"
+          >
             <X size={24} />
           </button>
         </div>
@@ -1012,7 +1168,11 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
                 className="px-12 py-4 bg-gradient-to-r from-bcp-orange to-bcp-orange-dark text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:scale-[1.02] hover:shadow-orange-500/30 transition-all flex items-center space-x-3"
               >
                 <Send className="w-5 h-5" />
-                <span>{viewMode === 'create' ? t('Soumettre pour Validation', 'Submit for Validation') : t('Soumettre la Modification', 'Submit Modification')}</span>
+                <span>
+                  {viewMode === 'create' || viewMode === 'resume-draft'
+                    ? t('Soumettre pour Validation', 'Submit for Validation')
+                    : t('Soumettre la Modification', 'Submit Modification')}
+                </span>
               </button>
             </div>
           </div>

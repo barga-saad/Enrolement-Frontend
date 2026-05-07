@@ -76,6 +76,7 @@ function App() {
                       <Route path="/dashboard" element={<DashboardPage />} />
                       <Route path="/partners" element={<PartnersPage key="partners-list" />} />
                       <Route path="/partners/new" element={<PartnersPage key="partners-new" initialMode="create" />} />
+                      <Route path="/partners/drafts" element={<PartnersPage key="partners-drafts" initialMode="drafts" />} />
                       <Route path="/partners/edit" element={<PartnersPage key="partners-edit" initialMode="edit" />} />
                       <Route path="/partners/validate" element={<PartnersPage key="partners-validate" initialMode="validate" />} />
                       <Route path="/partners/consult" element={<PartnersPage key="partners-consult" initialMode="consult" />} />

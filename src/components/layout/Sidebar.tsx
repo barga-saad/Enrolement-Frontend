@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Shield, LogOut, X, PlusCircle, Edit, CheckSquare, Eye, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, Shield, LogOut, X, PlusCircle, Edit, CheckSquare, Eye, ClipboardList, FileText } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { useLangStore, t } from '../../utils/langStore';
 import logo from '../../../image.png';
@@ -27,10 +27,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   ];
 
   const partnerMenuItems = [
-    { icon: PlusCircle, label: t('Saisie nouveau', 'New Entry'),         path: '/partners/new',      roles: ['PROFIL_ADMIN_CENTRAL', 'PROFIL_SAISIE'] },
-    { icon: Edit,       label: t('Modification', 'Modification'),        path: '/partners/edit',     roles: ['PROFIL_ADMIN_CENTRAL', 'PROFIL_SAISIE'] },
-    { icon: CheckSquare,label: t('Validation', 'Validation'),            path: '/partners/validate', roles: ['PROFIL_ADMIN_CENTRAL', 'PROFIL_VALIDATEUR'] },
-    { icon: Eye,        label: t('Consultation', 'Consultation'),        path: '/partners/consult',  roles: [] },
+    { icon: PlusCircle,  label: t('Saisie nouveau', 'New Entry'),      path: '/partners/new',    roles: ['PROFIL_ADMIN_CENTRAL', 'PROFIL_SAISIE'] },
+    { icon: FileText,    label: t('Mes Brouillons', 'My Drafts'),       path: '/partners/drafts', roles: ['PROFIL_ADMIN_CENTRAL', 'PROFIL_SAISIE'] },
+    { icon: Edit,        label: t('Modification', 'Modification'),      path: '/partners/edit',   roles: ['PROFIL_ADMIN_CENTRAL', 'PROFIL_SAISIE'] },
+    { icon: CheckSquare, label: t('Validation', 'Validation'),          path: '/partners/validate', roles: ['PROFIL_ADMIN_CENTRAL', 'PROFIL_VALIDATEUR'] },
+    { icon: Eye,         label: t('Consultation', 'Consultation'),      path: '/partners/consult',  roles: [] },
   ];
 
   const adminMenuItems = [

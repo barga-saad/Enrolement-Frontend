@@ -149,35 +149,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             </>
           )}
         </nav>
-
-        {/* Footer User Profile */}
-        <div className="p-4 mt-auto">
-          <div className="p-4 bg-gray-50 dark:bg-dark-bg-soft rounded-3xl border border-gray-100 dark:border-dark-border group transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-brown-600 flex items-center justify-center text-white font-bold text-sm shadow-inner ring-2 ring-white dark:ring-dark-bg-soft">
-                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                  {user?.firstName} {user?.lastName}
-                </p>
-                <p className="text-[10px] text-bcp-orange font-bold uppercase tracking-tighter truncate">
-                  {user?.roleNames?.length
-                    ? (ROLE_LABELS[user.roleNames[0]] ?? user.roleNames[0])
-                    : t('Aucun rôle assigné', 'No role assigned')}
-                </p>
-              </div>
-            </div>
-            
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 bg-white dark:bg-dark-bg shadow-sm rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-300 border border-gray-100 dark:border-dark-border font-bold text-xs"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>{t('Déconnexion', 'Sign Out')}</span>
-            </button>
-          </div>
-        </div>
       </div>
     </>
   );

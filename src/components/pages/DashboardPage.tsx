@@ -44,22 +44,24 @@ const DashboardPage = () => {
       setLoading(true);
 
       if (isAdmin) {
-        const [usersRes, rolesRes, partnersRes, permissionsRes] = await Promise.allSettled([
+        const [usersRes, rolesRes, partnersRes, permissionsRes, pendingRes] = await Promise.allSettled([
           apiService.getUsers(),
           apiService.getRoles(),
           apiService.getPartners(),
           apiService.getPermissions(),
+          apiService.getPendingValidations(),
         ]);
 
         const users = usersRes.status === 'fulfilled' ? (Array.isArray(usersRes.value.data) ? usersRes.value.data : []) : [];
         const roles = rolesRes.status === 'fulfilled' ? (Array.isArray(rolesRes.value.data) ? rolesRes.value.data : []) : [];
         const partners = partnersRes.status === 'fulfilled' ? (partnersRes.value.data?.data || []) : [];
         const permissions = permissionsRes.status === 'fulfilled' ? (Array.isArray(permissionsRes.value.data) ? permissionsRes.value.data : []) : [];
+        const pendingValidations = pendingRes.status === 'fulfilled' ? (pendingRes.value.data?.data || pendingRes.value.data || []) : [];
 
         const activeUsers = Array.isArray(users) ? users.filter((u: any) => u.isActive).length : 0;
         const activeRoles = Array.isArray(roles) ? roles.filter((r: any) => r.isActive).length : 0;
         const totalPartners = Array.isArray(partners) ? partners.length : 0;
-        const pendingApprovals = Array.isArray(partners) ? partners.filter((p: any) => p.status === 'PENDING_APPROVAL').length : 0;
+        const pendingApprovals = Array.isArray(pendingValidations) ? pendingValidations.length : 0;
 
         setStats({
           totalUsers: Array.isArray(users) ? users.length : 0,
@@ -102,7 +104,7 @@ const DashboardPage = () => {
           const partners = partnersRes.data?.data || [];
           setStats({
             totalPartners: Array.isArray(partners) ? partners.length : 0,
-            pendingApprovals: Array.isArray(partners) ? partners.filter((p: any) => p.status === 'PENDING_APPROVAL').length : 0,
+            pendingApprovals: Array.isArray(partners) ? partners.filter((p: any) => p.workflowStatus === 'PENDING').length : 0,
           });
 
           const activities: RecentActivity[] = [];
@@ -216,12 +218,12 @@ const DashboardPage = () => {
       <div className={`grid gap-6 ${isAdmin ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
         {isAdmin && (
           <>
-            <StatCard icon={Users} label={t('Utilisateurs Globaux', 'Global Users')} value={stats.totalUsers} color="text-blue-600" trend="+12%" />
-            <StatCard icon={CheckCircle} label={t('Utilisateurs Actifs', 'Active Users')} value={stats.activeUsers} color="text-green-600" trend="+8%" />
+            <StatCard icon={Users} label={t('Utilisateurs Globaux', 'Global Users')} value={stats.totalUsers} color="text-blue-600" />
+            <StatCard icon={CheckCircle} label={t('Utilisateurs Actifs', 'Active Users')} value={stats.activeUsers} color="text-green-600" />
             <StatCard icon={Shield} label={t('Rôles Personnalisés', 'Custom Roles')} value={stats.activeRoles} color="text-purple-600" />
           </>
         )}
-        <StatCard icon={FileText} label={t('Partenaires Enregistrés', 'Registered Partners')} value={stats.totalPartners} color="text-indigo-600" trend="+15%" />
+        <StatCard icon={FileText} label={t('Partenaires Enregistrés', 'Registered Partners')} value={stats.totalPartners} color="text-indigo-600" />
         <StatCard icon={Clock} label={t('En Attente d\'Approbation', 'Awaiting Approval')} value={stats.pendingApprovals} color="text-amber-600" />
         {isAdmin && <StatCard icon={Shield} label={t('Permissions Système', 'System Permissions')} value={stats.totalPermissions} color="text-cyan-600" />}
       </div>

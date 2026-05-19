@@ -110,11 +110,6 @@ const LoginPage = () => {
         {/* 🛂 RIGHT SIDE: THE LOGIN VAULT */}
         <div className="flex-[0.9] p-8 md:p-12 bg-white/30 dark:bg-black/60 backdrop-blur-3xl flex flex-col justify-center items-center relative overflow-hidden text-bcp-brown dark:text-white border-l border-warm-300 dark:border-white/5">
 
-          {/* Subtle geometric accents */}
-          <div className="absolute top-0 right-0 p-12 opacity-[0.2] pointer-events-none">
-            <div className="w-48 h-48 border-[30px] border-bcp-orange rounded-full animate-spin-slow" />
-          </div>
-
           <div className="w-full max-w-[320px] relative z-10">
             <div className="mb-10 text-center flex flex-col items-center">
               <div className="mb-6">

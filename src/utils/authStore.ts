@@ -92,6 +92,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       });
 
       storage.set('authToken', loginData.token);
+      if (loginData.refreshToken) storage.set('refreshToken', loginData.refreshToken);
       storage.set('user', user);
       storage.set('requiresPasswordChange', requiresPasswordChange);
 

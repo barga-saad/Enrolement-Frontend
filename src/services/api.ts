@@ -64,7 +64,7 @@ export const createApiClient = (): AxiosInstance => {
 
       return response;
     },
-    (error: AxiosError<ApiError>) => {
+    async (error: AxiosError<ApiError>) => {
       const config = error.config as any;
       const metadata = config?.metadata as { startedAt?: number; requestId?: string } | undefined;
       const durationMs = metadata?.startedAt ? Date.now() - metadata.startedAt : undefined;
@@ -82,9 +82,26 @@ export const createApiClient = (): AxiosInstance => {
         error
       );
 
-      if (error.response?.status === 401) {
-        // Token expired or invalid
+      if (error.response?.status === 401 && config && !config._retried) {
+        const refreshToken = storage.get('refreshToken');
+        if (refreshToken) {
+          config._retried = true;
+          try {
+            const refreshRes = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
+            const newToken = refreshRes.data?.data?.token;
+            const newRefresh = refreshRes.data?.data?.refreshToken;
+            if (newToken) {
+              storage.set('authToken', newToken);
+              if (newRefresh) storage.set('refreshToken', newRefresh);
+              config.headers.Authorization = `Bearer ${newToken}`;
+              return client(config);
+            }
+          } catch {
+            // refresh failed — fall through to redirect
+          }
+        }
         storage.remove('authToken');
+        storage.remove('refreshToken');
         storage.remove('user');
         logger.warn('Session expired, redirecting to login', {
           url: config?.url,
@@ -108,6 +125,9 @@ export const apiService = {
   // Auth endpoints
   login: (username: string, password: string) =>
     apiClient.post<ApiResponse<LoginResponse>>('/auth/login', { username, password }),
+
+  refreshToken: (refreshToken: string) =>
+    apiClient.post('/auth/refresh', { refreshToken }),
 
   logout: () =>
     apiClient.post('/auth/logout'),
@@ -199,7 +219,7 @@ export const apiService = {
   createPartner: (data: any) =>
     apiClient.post('/v1/create/partners', data),
 
-  updatePartner: (id: string, data: any) =>
+  updatePartner: (_id: string, data: any) =>
     apiClient.put('/v1/update/partners', data),
 
   deletePartner: (id: string) =>
@@ -259,4 +279,7 @@ export const apiService = {
 
   getAuditLogsByUser: (userId: number, page = 0, size = 20) =>
     apiClient.get(`/admin/audit-logs/by-user/${userId}?page=${page}&size=${size}`),
+
+  getAuditLogsByDateRange: (startDate: string, endDate: string, page = 0, size = 20) =>
+    apiClient.get(`/admin/audit-logs/by-date-range?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&page=${page}&size=${size}`),
 };

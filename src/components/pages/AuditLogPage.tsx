@@ -24,17 +24,24 @@ const AuditLogPage = () => {
   const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEntity, setFilterEntity] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const pageSize = 20;
 
   useEffect(() => {
     fetchLogs();
-  }, [page, filterEntity]);
+  }, [page, filterEntity, dateFrom, dateTo]);
 
   const fetchLogs = async () => {
     try {
       setLoading(true);
       let response;
-      if (filterEntity) {
+      if (dateFrom && dateTo) {
+        // ISO date-time format required by backend
+        const start = `${dateFrom}T00:00:00`;
+        const end = `${dateTo}T23:59:59`;
+        response = await apiService.getAuditLogsByDateRange(start, end, page, pageSize);
+      } else if (filterEntity) {
         response = await apiService.getAuditLogsByEntity(filterEntity, page, pageSize);
       } else {
         response = await apiService.getAuditLogs(page, pageSize);
@@ -133,6 +140,32 @@ const AuditLogPage = () => {
             <option value="USER">User</option>
             <option value="ROLE">Role</option>
           </select>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(0); }}
+              className="px-3 py-3 bg-white dark:bg-dark-bg border border-gray-100 dark:border-dark-border rounded-[1.25rem] text-sm text-gray-600 dark:text-dark-text-dim focus:ring-4 focus:ring-bcp-orange/10 focus:border-bcp-orange outline-none"
+              title={t('Date de début', 'Start date')}
+            />
+            <span className="text-gray-400 text-sm font-bold">→</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setPage(0); }}
+              className="px-3 py-3 bg-white dark:bg-dark-bg border border-gray-100 dark:border-dark-border rounded-[1.25rem] text-sm text-gray-600 dark:text-dark-text-dim focus:ring-4 focus:ring-bcp-orange/10 focus:border-bcp-orange outline-none"
+              title={t('Date de fin', 'End date')}
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo(''); setPage(0); }}
+                className="p-2 rounded-xl bg-gray-100 dark:bg-dark-bg-soft text-gray-500 hover:text-bcp-orange transition-all"
+                title={t('Effacer les dates', 'Clear dates')}
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

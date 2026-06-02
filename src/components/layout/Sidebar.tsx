@@ -1,7 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Shield, LogOut, X, PlusCircle, Edit, CheckSquare, Eye, ClipboardList, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { LayoutDashboard, Users, Shield, X, PlusCircle, Edit, CheckSquare, Eye, ClipboardList, FileText } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { useLangStore, t } from '../../utils/langStore';
+import { apiService } from '../../services/api';
 import logo from '../../../image.png';
 
 interface SidebarProps {
@@ -12,15 +14,21 @@ interface SidebarProps {
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout: _logout, user } = useAuth();
   const { lang: _lang } = useLangStore(); // Use underscore to suppress unused warning while keeping reactive trigger
+  const [pendingCount, setPendingCount] = useState(0);
 
-  const ROLE_LABELS: Record<string, string> = {
-    PROFIL_ADMIN_CENTRAL: t('Administrateur Central', 'Central Admin'),
-    PROFIL_SAISIE:        t('Saisie de Données', 'Data Entry'),
-    PROFIL_VALIDATEUR:    t('Validateur', 'Validator'),
-    PROFIL_CONSULTATION:  t('Consultation', 'Consultation'),
-  };
+  const canValidate = user?.roleNames?.some(r => r === 'PROFIL_ADMIN_CENTRAL' || r === 'PROFIL_VALIDATEUR') || false;
+
+  useEffect(() => {
+    if (!canValidate) return;
+    apiService.getPendingValidations()
+      .then((res) => {
+        const data = res.data?.data || res.data || [];
+        setPendingCount(Array.isArray(data) ? data.length : 0);
+      })
+      .catch(() => {});
+  }, [canValidate]);
 
   const menuItems = [
     { icon: LayoutDashboard, label: t('Tableau de bord', 'Dashboard'),  path: '/' },
@@ -40,11 +48,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { icon: ClipboardList,  label: t('Journal d\'audit', 'Audit Log'), path: '/audit',    requiredRole: 'PROFIL_ADMIN_CENTRAL' },
   ];
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
     return location.pathname === path || location.pathname.startsWith(path + '/');
@@ -62,6 +65,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   const renderNavItem = (item: { icon: any; label: string; path: string }, key: string) => {
     const active = isActive(item.path);
+    const showBadge = item.path === '/partners/validate' && pendingCount > 0;
     return (
       <button
         key={key}
@@ -76,7 +80,14 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <item.icon className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${active ? 'animate-pulse-subtle' : ''}`} />
           <span className="font-semibold text-sm">{item.label}</span>
         </div>
-        {active && <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-glow" />}
+        <div className="flex items-center space-x-2">
+          {showBadge && (
+            <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black flex items-center justify-center ${active ? 'bg-white text-bcp-orange' : 'bg-bcp-orange text-white'}`}>
+              {pendingCount}
+            </span>
+          )}
+          {active && !showBadge && <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-glow" />}
+        </div>
       </button>
     );
   };

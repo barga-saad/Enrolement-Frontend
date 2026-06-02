@@ -35,6 +35,20 @@ const UnauthorizedPage = () => (
   </div>
 );
 
+// 404 Not Found page
+const NotFoundPage = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="text-center space-y-4">
+      <h1 className="text-8xl font-black text-bcp-orange">404</h1>
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Page introuvable</h2>
+      <p className="text-gray-500 dark:text-gray-400">La page que vous cherchez n'existe pas.</p>
+      <a href="/" className="inline-block mt-4 px-6 py-3 bg-bcp-orange text-white rounded-2xl font-bold hover:bg-bcp-orange/90 transition-all">
+        Retour au tableau de bord
+      </a>
+    </div>
+  </div>
+);
+
 import { Loader } from './components/common/Loader';
 
 function App() {
@@ -113,7 +127,7 @@ function App() {
                         }
                       />
                       
-                      <Route path="*" element={<Navigate to="/" replace />} />
+                      <Route path="*" element={<NotFoundPage />} />
                     </Routes>
                   </Layout>
                 )

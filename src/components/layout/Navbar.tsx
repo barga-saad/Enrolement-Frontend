@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Menu, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { ThemeToggle } from '../common/ThemeToggle';

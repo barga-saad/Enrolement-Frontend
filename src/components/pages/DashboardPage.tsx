@@ -44,12 +44,13 @@ const DashboardPage = () => {
       setLoading(true);
 
       if (isAdmin) {
-        const [usersRes, rolesRes, partnersRes, permissionsRes, pendingRes] = await Promise.allSettled([
+        const [usersRes, rolesRes, partnersRes, permissionsRes, pendingRes, auditRes] = await Promise.allSettled([
           apiService.getUsers(),
           apiService.getRoles(),
           apiService.getPartners(),
           apiService.getPermissions(),
           apiService.getPendingValidations(),
+          apiService.getAuditLogs(0, 5),
         ]);
 
         const users = usersRes.status === 'fulfilled' ? (Array.isArray(usersRes.value.data) ? usersRes.value.data : []) : [];
@@ -57,10 +58,11 @@ const DashboardPage = () => {
         const partners = partnersRes.status === 'fulfilled' ? (partnersRes.value.data?.data || []) : [];
         const permissions = permissionsRes.status === 'fulfilled' ? (Array.isArray(permissionsRes.value.data) ? permissionsRes.value.data : []) : [];
         const pendingValidations = pendingRes.status === 'fulfilled' ? (pendingRes.value.data?.data || pendingRes.value.data || []) : [];
+        const auditLogs = auditRes.status === 'fulfilled' ? (auditRes.value.data?.data?.content || auditRes.value.data?.content || auditRes.value.data?.data || []) : [];
 
         const activeUsers = Array.isArray(users) ? users.filter((u: any) => u.isActive).length : 0;
         const activeRoles = Array.isArray(roles) ? roles.filter((r: any) => r.isActive).length : 0;
-        const totalPartners = Array.isArray(partners) ? partners.length : 0;
+        const totalPartners = Array.isArray(partners) ? partners.filter((p: any) => p.workflowStatus === 'VALIDATED').length : 0;
         const pendingApprovals = Array.isArray(pendingValidations) ? pendingValidations.length : 0;
 
         setStats({
@@ -72,54 +74,38 @@ const DashboardPage = () => {
           totalPermissions: Array.isArray(permissions) ? permissions.length : 0,
         });
 
-        const activities: RecentActivity[] = [];
-        if (Array.isArray(partners) && partners.length > 0) {
-          partners.slice(0, 2).forEach((partner: any, index: number) => {
-            activities.push({
-              id: `partner-${index}`,
-              type: 'partner',
-              action: t('Profil Partenaire Créé', 'Partner Profile Created'),
-              entity: partner.partnerName || `Partner ${index + 1}`,
-              timestamp: new Date(partner.createdAt || Date.now()).toLocaleDateString(),
-              status: 'success',
-            });
-          });
-        }
-        if (Array.isArray(users) && users.length > 0) {
-          users.slice(0, 2).forEach((u: any, index: number) => {
-            activities.push({
-              id: `user-${index}`,
-              type: 'user',
-              action: t('Nouvel Utilisateur Enregistré', 'New User Registered'),
-              entity: u.username || `User ${index + 1}`,
-              timestamp: new Date(u.createdAt || Date.now()).toLocaleDateString(),
-              status: u.isActive ? 'success' : 'warning',
-            });
-          });
-        }
+        const ACTION_STATUS: Record<string, 'success' | 'pending' | 'warning'> = {
+          CREATE: 'success', VALIDATE: 'success', UPDATE: 'pending', SUBMIT: 'pending', REJECT: 'warning', DELETE: 'warning', DRAFT: 'pending',
+        };
+        const ACTION_TYPE: Record<string, 'partner' | 'user' | 'role' | 'approval'> = {
+          PARTNER: 'partner', PARTNER_VALIDATION: 'approval', USER: 'user', ROLE: 'role',
+        };
+        const activities: RecentActivity[] = Array.isArray(auditLogs) ? auditLogs.slice(0, 5).map((log: any) => ({
+          id: String(log.id),
+          type: ACTION_TYPE[log.entityType] || 'partner',
+          action: log.action || '—',
+          entity: log.username || `#${log.entityId}`,
+          timestamp: log.timestamp ? new Date(log.timestamp).toLocaleString('fr-FR') : '—',
+          status: Object.entries(ACTION_STATUS).find(([k]) => (log.action || '').toUpperCase().includes(k))?.[1] || 'success',
+        })) : [];
         setRecentActivity(activities.slice(0, 5));
       } else {
         try {
           const partnersRes = await apiService.getPartners();
           const partners = partnersRes.data?.data || [];
           setStats({
-            totalPartners: Array.isArray(partners) ? partners.length : 0,
+            totalPartners: Array.isArray(partners) ? partners.filter((p: any) => p.workflowStatus === 'VALIDATED').length : 0,
             pendingApprovals: Array.isArray(partners) ? partners.filter((p: any) => p.workflowStatus === 'PENDING').length : 0,
           });
 
-          const activities: RecentActivity[] = [];
-          if (Array.isArray(partners) && partners.length > 0) {
-            partners.slice(0, 3).forEach((partner: any, index: number) => {
-              activities.push({
-                id: `partner-${index}`,
-                type: 'partner',
-                action: t('Révision Partenaire', 'Partner Review'),
-                entity: partner.partnerName || `Partner ${index + 1}`,
-                timestamp: new Date(partner.createdAt || Date.now()).toLocaleDateString(),
-                status: 'success',
-              });
-            });
-          }
+          const activities: RecentActivity[] = Array.isArray(partners) ? partners.slice(0, 3).map((partner: any, index: number) => ({
+            id: `partner-${index}`,
+            type: 'partner' as const,
+            action: t('Partenaire', 'Partner') + ' — ' + (partner.workflowStatus || ''),
+            entity: partner.partnerName || partner.name || `Partner ${index + 1}`,
+            timestamp: partner.createdAt ? new Date(partner.createdAt).toLocaleDateString('fr-FR') : '—',
+            status: partner.workflowStatus === 'VALIDATED' ? 'success' as const : partner.workflowStatus === 'REJECTED' ? 'warning' as const : 'pending' as const,
+          })) : [];
           setRecentActivity(activities);
         } catch (error) {
           console.error('Error loading partner data:', error);

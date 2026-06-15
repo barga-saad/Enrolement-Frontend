@@ -886,12 +886,6 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
           </button>
         </div>
 
-        <button
-          onClick={resetForm}
-          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-        >
-          {t('Annuler', 'Cancel')}
-        </button>
       </div>
     );
   }
@@ -922,6 +916,8 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
           <button
             onClick={viewMode === 'resume-draft'
               ? () => { setViewMode('drafts'); setSelectedPartner(null); setFormData({...DEFAULT_FORM}); setFormErrors({}); }
+              : viewMode === 'create'
+              ? () => { setFormData({...DEFAULT_FORM}); setFormErrors({}); setSelectedPartner(null); setActiveFormTab(0); setViewMode('choose-type'); }
               : resetForm}
             className="p-3 text-gray-400 hover:text-red-500 transition-colors"
           >
@@ -1456,9 +1452,13 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
                   {/* Left side: Cancel + Previous */}
                   <div className="flex items-center space-x-3">
                     <button
-                      onClick={viewMode === 'resume-draft'
-                        ? () => { setViewMode('drafts'); setSelectedPartner(null); setFormData({...DEFAULT_FORM}); setFormErrors({}); setActiveFormTab(0); }
-                        : resetForm}
+                      onClick={
+                        viewMode === 'resume-draft'
+                          ? () => { setViewMode('drafts'); setSelectedPartner(null); setFormData({...DEFAULT_FORM}); setFormErrors({}); setActiveFormTab(0); }
+                          : viewMode === 'create'
+                          ? () => { setFormData({...DEFAULT_FORM}); setFormErrors({}); setSelectedPartner(null); setActiveFormTab(0); setViewMode('choose-type'); }
+                          : resetForm
+                      }
                       className="px-6 py-3 rounded-2xl font-bold text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-bg-soft transition-all text-sm"
                     >
                       {t('Annuler', 'Cancel')}

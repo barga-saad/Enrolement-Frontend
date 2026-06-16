@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Eye, Check, X, Edit2, Search, Filter, Download, Shield, FileText, Save, Send, AlertTriangle, Building2, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FormInput, FormSelect, FormSection, FormBlock } from '../common/FormComponents';
+import { CountrySelect, countryLabel } from '../common/CountrySelect';
 import { Table, TableColumn } from '../common/Table';
 import { Toggle } from '../common/Toggle';
 import { useToast } from '../../utils/toastStore';
@@ -212,7 +213,7 @@ const WORKFLOW_BADGES: Record<string, { bg: string; text: string; labelFr: strin
 const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   const toast = useToast();
   const { user } = useAuth();
-  const { lang: _lang } = useLangStore();
+  const { lang } = useLangStore();
   const [viewMode, setViewMode] = useState<ViewMode>(
     initialMode === 'create' ? 'choose-type' :
     initialMode === 'drafts' ? 'drafts' :
@@ -1011,36 +1012,18 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
                           placeholder={t('Nom complet de l\'entité', 'Full legal entity name')}
                         />
                         <div className="grid grid-cols-2 gap-4">
-                          <FormSelect
+                          <CountrySelect
                             label={t('Pays du Siège', 'Headquarter Country')}
                             required
                             value={formData.headquarterCountry || 'MA'}
-                            onChange={(e) => updateForm('headquarterCountry', e.target.value)}
+                            onChange={(code) => updateForm('headquarterCountry', code)}
                             error={formErrors.headquarterCountry || undefined}
-                            options={[
-                              { value: 'MA', label: t('Maroc', 'Morocco') },
-                              { value: 'FR', label: 'France' },
-                              { value: 'US', label: t('États-Unis', 'United States') },
-                              { value: 'TN', label: t('Tunisie', 'Tunisia') },
-                              { value: 'DZ', label: t('Algérie', 'Algeria') },
-                              { value: 'SN', label: t('Sénégal', 'Senegal') },
-                              { value: 'CI', label: "Côte d'Ivoire" },
-                              { value: 'GB', label: t('Royaume-Uni', 'United Kingdom') },
-                              { value: 'DE', label: t('Allemagne', 'Germany') },
-                            ]}
                           />
-                          <FormSelect
+                          <CountrySelect
                             label={t('Pays de la Société Mère', 'Parent Company Country')}
                             value={formData.parentCompanyCountry || ''}
-                            onChange={(e) => updateForm('parentCompanyCountry', e.target.value)}
-                            options={[
-                              { value: '', label: t('Aucun', 'None') },
-                              { value: 'MA', label: t('Maroc', 'Morocco') },
-                              { value: 'FR', label: 'France' },
-                              { value: 'US', label: t('États-Unis', 'United States') },
-                              { value: 'TN', label: t('Tunisie', 'Tunisia') },
-                              { value: 'GB', label: t('Royaume-Uni', 'United Kingdom') },
-                            ]}
+                            onChange={(code) => updateForm('parentCompanyCountry', code)}
+                            includeEmpty
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -1572,7 +1555,7 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { label: t('Type', 'Type'), value: selectedPartner.partnerType },
-                { label: t('Pays du Siège', 'Country'), value: selectedPartner.headquarterCountry },
+                { label: t('Pays du Siège', 'Country'), value: countryLabel(selectedPartner.headquarterCountry, lang) },
                 { label: t('Classification', 'Classification'), value: selectedPartner.classification },
                 { label: t('Devise Principale', 'Main Currency'), value: selectedPartner.mainCurrency },
                 { label: t('Devise Commission', 'Commission Currency'), value: selectedPartner.commissionCurrency },
@@ -1705,7 +1688,7 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { label: t('Type de Partenaire', 'Partner Type'), value: selectedPartner.partnerType },
-                { label: t('Pays du Siège', 'Country'), value: selectedPartner.headquarterCountry },
+                { label: t('Pays du Siège', 'Country'), value: countryLabel(selectedPartner.headquarterCountry, lang) },
                 { label: t('Classification', 'Classification'), value: selectedPartner.classification },
                 { label: t('Devise Principale', 'Main Currency'), value: selectedPartner.mainCurrency },
                 { label: t('Devise de Commission', 'Commission Currency'), value: selectedPartner.commissionCurrency },

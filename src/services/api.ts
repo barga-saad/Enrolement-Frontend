@@ -8,7 +8,7 @@ import { LoginResponse, ApiError, ApiResponse } from '../types';
 import { storage } from '../utils/helpers';
 import { logger } from '../utils/logger';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8082';
 const REQUEST_ID_HEADER = 'X-Request-Id';
 
 const generateRequestId = (): string => {

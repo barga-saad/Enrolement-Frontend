@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Plus, Eye, Check, X, Edit2, Search, Filter, Download, Shield, FileText, Save, Send, AlertTriangle, Building2, User, ChevronLeft, ChevronRight } from 'lucide-react';
-import { FormInput, FormSelect, FormSection, FormBlock } from '../common/FormComponents';
-import { CountrySelect, countryLabel } from '../common/CountrySelect';
+﻿import { useState, useEffect } from 'react';
+import { Plus, Eye, Check, X, Edit2, Search, Filter, Download, Shield, FileText, Send, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FormInput, FormSelect, SearchableSelect } from '../common/FormComponents';
+import { COUNTRIES } from '../../utils/countries';
+import { CURRENCIES } from '../../utils/currencies';
 import { Table, TableColumn } from '../common/Table';
 import { Toggle } from '../common/Toggle';
 import { useToast } from '../../utils/toastStore';
@@ -31,12 +32,14 @@ interface Partner {
   allowedCashPickupTransfer: boolean;
   allowedMassCashPickupTransfer: boolean;
   allowedWalletTransfer: boolean;
+  allowedSrbmRtgsTransfer?: boolean;
   limitInternalInstantTransfer: number;
   limitExternalInstantTransfer: number;
   limitStandardTransfer: number;
   limitCashPickupTransfer: number;
   limitMassCashPickupTransfer: number;
   limitWalletTransfer: number;
+  limitSrbmRtgsTransfer?: number;
   natureMassCashPickupTransfer: number;
   validDaysMassCashPickupTransfer: number;
   mainCurrency: string;
@@ -143,11 +146,11 @@ const TRANSFER_TYPES = [
 const DEFAULT_FORM: Partial<Partner> = {
   name: '',
   partnerReferenceNumber: '',
-  partnerType: 'Partenaire',
+  partnerType: '',
   partnerStatus: 'ACTIVE',
-  headquarterCountry: 'MA',
+  headquarterCountry: '',
   parentCompanyCountry: '',
-  classification: 'Local',
+  classification: '',
   accountNumber: '',
   canal: '',
   allowedInternalInstantTransfer: false,
@@ -156,21 +159,23 @@ const DEFAULT_FORM: Partial<Partner> = {
   allowedCashPickupTransfer: false,
   allowedMassCashPickupTransfer: false,
   allowedWalletTransfer: false,
+  allowedSrbmRtgsTransfer: false,
   limitInternalInstantTransfer: 0,
   limitExternalInstantTransfer: 0,
   limitStandardTransfer: 0,
   limitCashPickupTransfer: 0,
   limitMassCashPickupTransfer: 0,
   limitWalletTransfer: 0,
+  limitSrbmRtgsTransfer: 0,
   natureMassCashPickupTransfer: 0,
   validDaysMassCashPickupTransfer: 0,
-  mainCurrency: 'MAD',
-  exchangeRateNature: '0',
+  mainCurrency: '',
+  exchangeRateNature: '',
   exchangeGainPercentage: 0,
-  subscriptionFee: 0,
+  subscriptionFee: undefined,
   subscriptionPeriodicity: '',
-  subscriptionBillingAccount: 0,
-  paymentNature: 'Post-paiement',
+  subscriptionBillingAccount: undefined,
+  paymentNature: '',
   feeMode: '',
   monthlyBilling: false,
   immediateDebit: false,
@@ -197,7 +202,7 @@ const DEFAULT_FORM: Partial<Partner> = {
   fichierSynthese: true,
 };
 
-type ViewMode = 'list' | 'choose-type' | 'create' | 'edit' | 'validate' | 'consult' | 'drafts' | 'resume-draft';
+type ViewMode = 'list' | 'create' | 'edit' | 'validate' | 'consult' | 'drafts' | 'resume-draft';
 
 interface PartnersPageProps {
   initialMode?: 'create' | 'edit' | 'validate' | 'consult' | 'drafts';
@@ -215,7 +220,7 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   const { user } = useAuth();
   const { lang } = useLangStore();
   const [viewMode, setViewMode] = useState<ViewMode>(
-    initialMode === 'create' ? 'choose-type' :
+    initialMode === 'create' ? 'create' :
     initialMode === 'drafts' ? 'drafts' :
     'list'
   );
@@ -297,6 +302,9 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
     accountNumber: [validators.required(t('Numéro de compte', 'Account number')), validators.bankAccount()],
     headquarterCountry: [validators.required(t('Pays', 'Country'))],
     classification: [validators.required(t('Classification', 'Classification'))],
+    partnerType: [validators.required(t('Type de partenaire', 'Partner type'))],
+    mainCurrency: [validators.required(t('Devise principale', 'Main currency'))],
+    paymentNature: [validators.required(t('Contrôle provision', 'Provision control'))],
   };
 
   const filteredPartners = partners.filter((p) => {
@@ -450,7 +458,16 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   };
 
   const updateForm = (key: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [key]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [key]: value };
+      if (key === 'partnerType') {
+        updated.enrollmentType = value === 'Client' ? 'CLIENT' : 'PARTNER';
+      }
+      return updated;
+    });
+    if (key === 'partnerType' && value !== 'Partenaire') {
+      setActiveFormTab((prev) => (prev === 3 ? 0 : prev));
+    }
   };
 
   const openEditPartner = (partner: Partner) => {
@@ -825,93 +842,37 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   }
 
   // ═══════════════════════════════════════════════════
-  //  ENROLLMENT TYPE SELECTION VIEW
-  // ═══════════════════════════════════════════════════
-  if (viewMode === 'choose-type') {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-10 animate-fadeIn">
-        <div className="text-center">
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-            {t('Nouvel Enrôlement', 'New Enrollment')}
-          </h1>
-          <p className="text-gray-500 dark:text-dark-text-dim text-sm font-medium mt-2">
-            {t('Sélectionnez le type de profil à enrôler', 'Select the type of profile to enroll')}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-          {/* PARTNER */}
-          <button
-            onClick={() => {
-              setFormData({ ...DEFAULT_FORM, enrollmentType: 'PARTNER' });
-              setFormErrors({});
-              setViewMode('create');
-            }}
-            className="group flex flex-col items-center text-center p-10 bg-white dark:bg-dark-bg-card rounded-[2rem] border-2 border-gray-100 dark:border-dark-border shadow-lg hover:border-bcp-orange hover:shadow-bcp-orange/10 hover:shadow-2xl transition-all duration-200 cursor-pointer"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-bcp-orange/10 group-hover:bg-bcp-orange flex items-center justify-center mb-5 transition-colors">
-              <Building2 className="w-8 h-8 text-bcp-orange group-hover:text-white transition-colors" />
-            </div>
-            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">
-              {t('Partenaire', 'Partner')}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-dark-text-dim leading-relaxed">
-              {t(
-                'Entreprise ou organisation partenaire avec accords de transfert et de commission',
-                'Business or organization with transfer agreements and commission structures'
-              )}
-            </p>
-          </button>
-
-          {/* CLIENT */}
-          <button
-            onClick={() => {
-              setFormData({ ...DEFAULT_FORM, enrollmentType: 'CLIENT' });
-              setFormErrors({});
-              setViewMode('create');
-            }}
-            className="group flex flex-col items-center text-center p-10 bg-white dark:bg-dark-bg-card rounded-[2rem] border-2 border-gray-100 dark:border-dark-border shadow-lg hover:border-bcp-brown hover:shadow-bcp-brown/10 hover:shadow-2xl transition-all duration-200 cursor-pointer"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-bcp-brown/10 group-hover:bg-bcp-brown flex items-center justify-center mb-5 transition-colors">
-              <User className="w-8 h-8 text-bcp-brown group-hover:text-white transition-colors" />
-            </div>
-            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">
-              {t('Client', 'Client')}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-dark-text-dim leading-relaxed">
-              {t(
-                'Client individuel ou corporate souscrivant aux services de transfert',
-                'Individual or corporate client subscribing to transfer services'
-              )}
-            </p>
-          </button>
-        </div>
-
-      </div>
-    );
-  }
-
-  // ═══════════════════════════════════════════════════
-  //  CREATE / EDIT FORM VIEW
+  //  CREATE / EDIT FORM VIEW  (reference-style 4 tabs)
   // ═══════════════════════════════════════════════════
   if (viewMode === 'create' || viewMode === 'edit' || viewMode === 'resume-draft') {
+    const isPartnerForm  = formData.partnerType === 'Partenaire';
+    const isClientForm   = formData.partnerType === 'Client';
+    const showConformite = isPartnerForm;
+    const FORM_TRANSFER_TYPES = [
+      { key: 'InstantInternal',  label: t('Virement instantané intra BP', 'Internal Instant Transfer'),   allowedKey: 'allowedInternalInstantTransfer',  limitKey: 'limitInternalInstantTransfer',  noLimit: false },
+      { key: 'InstantExternal',  label: t('Virement instantané confrère', 'External Instant Transfer'),   allowedKey: 'allowedExternalInstantTransfer',  limitKey: null,                            noLimit: true  },
+      { key: 'SrbmRtgs',         label: t('Virement SRBM confrère (RTGS)', 'SRBM Transfer (RTGS)'),       allowedKey: 'allowedSrbmRtgsTransfer',         limitKey: 'limitSrbmRtgsTransfer',         noLimit: false },
+      { key: 'Standard',         label: t('Virement ordinaire confrère', 'Standard External Transfer'),   allowedKey: 'allowedStandardTransfer',         limitKey: 'limitStandardTransfer',         noLimit: false },
+      { key: 'MassCashPickup',   label: t('Mise à disposition', 'Cash Pickup'),                           allowedKey: 'allowedMassCashPickupTransfer',   limitKey: 'limitMassCashPickupTransfer',   noLimit: false },
+      { key: 'Wallet',           label: t('Transfert Wallet', 'Wallet Transfer'),                         allowedKey: 'allowedWalletTransfer',           limitKey: 'limitWalletTransfer',           noLimit: false },
+    ];
+    const FORM_TABS_LIST = showConformite
+      ? [t('1. Informations générales', '1. General Info'), t('2. Transferts & Plafonds', '2. Transfers'), t('3. Abonnement & Contrôles', '3. Subscription'), t('4. Conformités', '4. Compliance')]
+      : [t('1. Informations générales', '1. General Info'), t('2. Transferts & Plafonds', '2. Transfers'), t('3. Abonnement & Contrôles', '3. Subscription')];
+    const lastTabIdx = FORM_TABS_LIST.length - 1;
     return (
-      <div className="space-y-8 max-w-6xl mx-auto animate-slideUp">
+      <div className="space-y-8 max-w-5xl mx-auto animate-slideUp">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
               {viewMode === 'create'
-                ? (formData.enrollmentType === 'CLIENT'
-                    ? t('Enrôlement Client', 'Client Enrollment')
-                    : t('Enrôlement Partenaire', 'Partner Enrollment'))
+                ? (isClientForm ? t('Enrôlement Client', 'Client Enrollment') : isPartnerForm ? t('Enrôlement Partenaire', 'Partner Enrollment') : t('Nouvel Enrôlement', 'New Enrollment'))
                 : viewMode === 'resume-draft'
                   ? t('Reprendre le Brouillon', 'Resume Draft')
                   : t('Modification Partenaire', 'Update Partner')}
             </h1>
             <p className="text-gray-500 dark:text-dark-text-dim text-sm font-medium">
-              {formData.enrollmentType === 'CLIENT'
-                ? t('Profil client â€” services de transfert', 'Client profile â€” transfer services')
-                : t('Paramétrage conforme du profil partenaire', 'Compliance-driven partner setup')}
+              {t('Remplissez le formulaire puis soumettez pour validation', 'Fill the form then submit for validation')}
             </p>
           </div>
           <button
@@ -926,580 +887,447 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
           </button>
         </div>
 
-        {/* ── TABBED FORM CONTAINER ── */}
-        {(() => {
-          const isClient = formData.enrollmentType === 'CLIENT';
-          const FORM_TABS = isClient
-            ? [
-                t('1. Informations générales', '1. General Information'),
-                t('2. Abonnement & Contrôles', '2. Subscription & Controls'),
-              ]
-            : [
-                t('1. Informations générales', '1. General Information'),
-                t('2. Transferts & Plafonds', '2. Transfers & Limits'),
-                t('3. Commissions & Abonnement', '3. Commissions & Subscription'),
-              ];
-          const lastTab = FORM_TABS.length - 1;
+        {/* ── FORM CONTAINER ── */}
+        <div className="bg-white dark:bg-dark-bg-card rounded-[2.5rem] shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-dark-border overflow-hidden">
 
-          return (
-            <div className="bg-white dark:bg-dark-bg-card rounded-[2.5rem] shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-dark-border overflow-hidden">
+          {/* TAB HEADERS */}
+          <div className="flex border-b border-gray-100 dark:border-dark-border">
+            {FORM_TABS_LIST.map((label, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveFormTab(i)}
+                className={`flex-1 px-6 py-5 text-sm font-bold transition-all border-b-2 ${
+                  activeFormTab === i
+                    ? 'text-bcp-orange border-bcp-orange bg-orange-50/30 dark:bg-bcp-orange/5'
+                    : 'text-gray-400 dark:text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-200 dark:hover:text-gray-300'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
-              {/* ── TAB HEADERS ── */}
-              <div className="flex border-b border-gray-100 dark:border-dark-border">
-                {FORM_TABS.map((label, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveFormTab(i)}
-                    className={`flex-1 px-6 py-5 text-sm font-bold transition-all border-b-2 ${
-                      activeFormTab === i
-                        ? 'text-bcp-orange border-bcp-orange bg-orange-50/30 dark:bg-bcp-orange/5'
-                        : 'text-gray-400 dark:text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-200 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+          {/* TAB CONTENT */}
+          <div className="p-8 space-y-8">
+
+            {/* TAB 0 — INFORMATIONS GÉNÉRALES */}
+            {activeFormTab === 0 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormInput
+                    label={t('Nom du partenaire', 'Partner name')}
+                    required
+                    value={formData.name || ''}
+                    onChange={(e) => updateForm('name', e.target.value)}
+                    error={formErrors.name || undefined}
+                    placeholder={t('Nom du partenaire', 'Partner name')}
+                  />
+                  <FormInput
+                    label={t('Code partenaire', 'Partner code')}
+                    value={formData.partnerReferenceNumber || ''}
+                    onChange={() => {}}
+                    disabled
+                    placeholder={t('Auto-généré', 'Auto-generated')}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormSelect
+                    label={t('Type', 'Type')}
+                    required
+                    value={formData.partnerType || ''}
+                    onChange={(e) => updateForm('partnerType', e.target.value)}
+                    options={[
+                      { value: '', label: '-- Choisir --' },
+                      { value: 'Partenaire', label: 'Partenaire' },
+                      { value: 'Client', label: 'Client' },
+                    ]}
+                  />
+                  <FormSelect
+                    label={t('Classification du partenaire', 'Partner classification')}
+                    required
+                    value={formData.classification || ''}
+                    onChange={(e) => updateForm('classification', e.target.value)}
+                    error={formErrors.classification || undefined}
+                    options={[
+                      { value: '', label: '-- Choisir --' },
+                      { value: 'Local', label: 'Local' },
+                      { value: 'Internationnal', label: 'International' },
+                    ]}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <SearchableSelect
+                    label={t('Pays du siège social', 'Headquarters Country')}
+                    required
+                    value={formData.headquarterCountry || ''}
+                    onChange={(v) => updateForm('headquarterCountry', v)}
+                    options={COUNTRIES.map((c) => ({ value: c.code, label: `${c.nameFr} (${c.code})` }))}
+                    placeholder="-- Rechercher un pays --"
+                    error={formErrors.headquarterCountry || undefined}
+                  />
+                  <FormInput
+                    label={t('Numéro de compte principal', 'Main account number')}
+                    required
+                    value={formData.accountNumber || ''}
+                    onChange={(e) => updateForm('accountNumber', e.target.value)}
+                    error={formErrors.accountNumber || undefined}
+                    placeholder="000000000000000000000000"
+                    maxLength={24}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <SearchableSelect
+                    label={t('Devise principale', 'Main currency')}
+                    required
+                    value={formData.mainCurrency || ''}
+                    onChange={(v) => updateForm('mainCurrency', v)}
+                    options={CURRENCIES.map((c) => ({ value: c.code, label: `${c.code} - ${c.nameFr}` }))}
+                    placeholder="-- Rechercher une devise --"
+                    error={formErrors.mainCurrency || undefined}
+                  />
+                  <FormSelect
+                    label={t('Nature taux de change', 'Exchange rate nature')}
+                    value={formData.exchangeRateNature || ''}
+                    onChange={(e) => updateForm('exchangeRateNature', e.target.value)}
+                    options={[
+                      { value: '', label: '-- Choisir --' },
+                      { value: 'Fixing', label: 'Fixing' },
+                      { value: 'Negocié', label: 'Négocié' },
+                      { value: 'Spot', label: 'Spot' },
+                    ]}
+                  />
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-dark-bg-soft/50 border border-gray-100 dark:border-dark-border">
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                    {formData.partnerStatus === 'ACTIVE' ? t('Statut : Actif', 'Status: Active') : t('Statut : Inactif', 'Status: Inactive')}
+                  </span>
+                  <Toggle
+                    checked={formData.partnerStatus === 'ACTIVE'}
+                    onChange={(v: boolean) => updateForm('partnerStatus', v ? 'ACTIVE' : 'INACTIVE')}
+                  />
+                </div>
               </div>
+            )}
 
-              {/* ── TAB CONTENT ── */}
-              <div className="p-8 md:p-12 space-y-12">
-
-                {/* ══ TAB 0 â€” INFORMATIONS GÃ‰NÃ‰RALES ══ */}
-                {activeFormTab === 0 && (
-                  <>
-                    {/* ── SECTION 1: IDENTITÉ ── */}
-                    <FormSection title={t('Identité', 'Core Identity')} subtitle={t('Détails d\'enregistrement officiel et classification', 'Official registration details and classification')}>
-                      <FormBlock title={t('ID Système & Statut', 'System ID & Status')} bgColor="gray">
-                        <FormInput
-                          label={t('Numéro de Référence Partenaire', 'Partner Reference Number')}
-                          value={formData.partnerReferenceNumber || ''}
-                          onChange={() => {}}
-                          disabled
-                          placeholder={t('Auto-généré par le système', 'Auto-generated by system')}
-                        />
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormSelect
-                            label={t('Type de Partenaire', 'Partner Type')}
-                            required
-                            value={formData.partnerType || 'Partenaire'}
-                            onChange={(e) => updateForm('partnerType', e.target.value)}
-                            options={[
-                              { value: 'Partenaire', label: 'Partenaire' },
-                              { value: 'Individual', label: t('Individuel', 'Individual') },
-                              { value: 'Enterprise', label: t('Entreprise', 'Enterprise') },
-                            ]}
-                          />
-                          <FormSelect
-                            label={t('Statut', 'Status')}
-                            required
-                            value={formData.partnerStatus || 'ACTIVE'}
-                            onChange={(e) => updateForm('partnerStatus', e.target.value)}
-                            options={[
-                              { value: 'ACTIVE', label: t('Actif', 'Active') },
-                              { value: 'INACTIVE', label: t('Inactif', 'Inactive') },
-                            ]}
-                          />
-                        </div>
-                      </FormBlock>
-
-                      <FormBlock title={t('Profil Juridique', 'Legal Profile')} bgColor="orange">
-                        <FormInput
-                          label={t('Désignation / Raison Sociale', 'Designation / Trade Name')}
-                          required
-                          value={formData.name || ''}
-                          onChange={(e) => updateForm('name', e.target.value)}
-                          error={formErrors.name || undefined}
-                          placeholder={t('Nom complet de l\'entité', 'Full legal entity name')}
-                        />
-                        <div className="grid grid-cols-2 gap-4">
-                          <CountrySelect
-                            label={t('Pays du Siège', 'Headquarter Country')}
-                            required
-                            value={formData.headquarterCountry || 'MA'}
-                            onChange={(code) => updateForm('headquarterCountry', code)}
-                            error={formErrors.headquarterCountry || undefined}
-                          />
-                          <CountrySelect
-                            label={t('Pays de la Société Mère', 'Parent Company Country')}
-                            value={formData.parentCompanyCountry || ''}
-                            onChange={(code) => updateForm('parentCompanyCountry', code)}
-                            includeEmpty
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormSelect
-                            label={t('Classification', 'Classification')}
-                            required
-                            value={formData.classification || ''}
-                            onChange={(e) => updateForm('classification', e.target.value)}
-                            error={formErrors.classification || undefined}
-                            options={[
-                              { value: 'Internationnal', label: 'International' },
-                              { value: 'Local', label: 'Local' },
-                            ]}
-                          />
-                          <FormInput
-                            label={t('Canal', 'Canal')}
-                            value={formData.canal || ''}
-                            onChange={(e) => updateForm('canal', e.target.value)}
-                            placeholder="ex: WESTERN_UNION"
-                          />
-                        </div>
-                      </FormBlock>
-                    </FormSection>
-
-                    {/* ── SECTION 2: PARAMÃˆTRES FINANCIERS ── */}
-                    <FormSection title={t('Paramètres Financiers', 'Financial Settings')} subtitle={t('Configuration de paiement et devise', 'Payment and currency configuration')}>
-                      <FormBlock title={t('Banque & Devise', 'Banking & Currency')} bgColor="gray">
-                        <FormInput
-                          label={t('Numéro de Compte (RIB)', 'Account Number (RIB)')}
-                          required
-                          placeholder={t('Numéro de compte à 16 chiffres', '16-digit account number')}
-                          value={formData.accountNumber || ''}
-                          onChange={(e) => updateForm('accountNumber', e.target.value)}
-                          error={formErrors.accountNumber || undefined}
-                        />
-                        <div className="grid grid-cols-3 gap-4">
-                          <FormSelect
-                            label={t('Devise Principale', 'Main Currency')}
-                            required
-                            value={formData.mainCurrency || 'MAD'}
-                            onChange={(e) => updateForm('mainCurrency', e.target.value)}
-                            options={[
-                              { value: 'MAD', label: 'MAD' },
-                              { value: 'USD', label: 'USD' },
-                              { value: 'EUR', label: 'EUR' },
-                              { value: 'GBP', label: 'GBP' },
-                              { value: 'XOF', label: 'XOF' },
-                            ]}
-                          />
-                          <FormSelect
-                            label={t('Devise de Commission', 'Commission Currency')}
-                            required
-                            value={formData.commissionCurrency || 'MAD'}
-                            onChange={(e) => updateForm('commissionCurrency', e.target.value)}
-                            options={[
-                              { value: 'MAD', label: 'MAD' },
-                              { value: 'USD', label: 'USD' },
-                              { value: 'EUR', label: 'EUR' },
-                              { value: 'GBP', label: 'GBP' },
-                              { value: 'XOF', label: 'XOF' },
-                            ]}
-                          />
-                          <FormSelect
-                            label={t('Nature de Paiement', 'Payment Nature')}
-                            required
-                            value={formData.paymentNature || 'Post-paiement'}
-                            onChange={(e) => updateForm('paymentNature', e.target.value)}
-                            options={[
-                              { value: 'Post-paiement', label: 'Post-paiement' },
-                              { value: 'Prépaiement', label: t('Prépaiement', 'Prepayment') },
-                            ]}
-                          />
-                        </div>
-                      </FormBlock>
-                    </FormSection>
-                  </>
-                )}
-
-                {/* ══ TAB 1 â€” TRANSFERTS & PLAFONDS (PARTNER only) ══ */}
-                {activeFormTab === 1 && !isClient && (
-                  <>
-                    {/* ── SECTION 3: TRANSFERTS ── */}
-                    <FormSection title={t('Permissions & Limites de Transfert', 'Transfer Permissions & Limits')} subtitle={t('Types de transfert autorisés et limites journalières', 'Allowed transfer types and daily limits')}>
-                      <div className="col-span-full card-base overflow-hidden border border-gray-100 dark:border-dark-border">
-                        <table className="w-full text-sm">
-                          <thead className="bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-dark-border">
-                            <tr>
-                              <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-widest text-gray-400">{t('Type de Transfert', 'Transfer Type')}</th>
-                              <th className="px-6 py-4 text-center font-bold text-xs uppercase tracking-widest text-gray-400">{t('Activé', 'Enabled')}</th>
-                              <th className="px-6 py-4 text-right font-bold text-xs uppercase tracking-widest text-gray-400">{t('Limite Journalière (MAD)', 'Daily Limit (MAD)')}</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-50 dark:divide-dark-border">
-                            {TRANSFER_TYPES.map((tt) => {
-                              const enabled = !!(formData as any)[tt.allowedKey];
-                              return (
-                                <tr key={tt.allowedKey} className={`transition-colors ${!enabled ? 'bg-gray-50/50 opacity-50' : 'hover:bg-orange-50/20'}`}>
-                                  <td className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">{tt.label}</td>
-                                  <td className="px-6 py-4 text-center">
-                                    <Toggle checked={enabled} onChange={(checked: boolean) => updateForm(tt.allowedKey, checked)} />
-                                  </td>
-                                  <td className="px-6 py-4 text-right">
-                                    <input
-                                      type="number"
-                                      value={(formData as any)[tt.limitKey] || 0}
-                                      onChange={(e) => updateForm(tt.limitKey, parseFloat(e.target.value) || 0)}
-                                      disabled={!enabled}
-                                      className="w-36 text-right bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl px-3 py-2 font-bold focus:ring-bcp-orange/20 focus:border-bcp-orange transition-all disabled:opacity-40"
-                                    />
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <FormBlock title={t('Détails Mise à Disposition de Masse', 'Mass Cash Pickup Details')} bgColor="gray">
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormInput
-                            label={t('Nature', 'Nature')}
-                            type="number"
-                            value={String(formData.natureMassCashPickupTransfer || 0)}
-                            onChange={(e) => updateForm('natureMassCashPickupTransfer', parseFloat(e.target.value) || 0)}
-                            placeholder="0"
-                          />
-                          <FormInput
-                            label={t('Jours de Validité', 'Valid Days')}
-                            type="number"
-                            value={String(formData.validDaysMassCashPickupTransfer || 0)}
-                            onChange={(e) => updateForm('validDaysMassCashPickupTransfer', parseInt(e.target.value) || 0)}
-                          />
-                        </div>
-                      </FormBlock>
-                    </FormSection>
-
-                    {/* ── SECTION 7: FOREX ── */}
-                    <FormSection title={t('Transferts en Devise', 'Foreign Currency Transfers')} subtitle={t('Autorisations de change et devises', 'Currency exchange authorizations')}>
-                      <FormBlock title={t('Réception de Devises', 'Currency Reception')} bgColor="orange">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-dark-border">
-                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('Autorisé', 'Authorized')}</span>
-                            <Toggle checked={formData.autoriserReception || false} onChange={(v: boolean) => updateForm('autoriserReception', v)} />
-                          </div>
-                          {formData.autoriserReception && (
-                            <div className="grid grid-cols-2 gap-4 pt-2">
-                              <FormInput label={t('Devises de réception', 'Reception currencies')} value={formData.devisesReception || ''} onChange={(e) => updateForm('devisesReception', e.target.value)} placeholder="USD, EUR, GBP..." />
-                              <FormInput label={t('Plafond réception', 'Reception ceiling')} type="number" step="0.01" value={String(formData.plafondReception || 0)} onChange={(e) => updateForm('plafondReception', parseFloat(e.target.value) || 0)} />
-                            </div>
-                          )}
-                        </div>
-                      </FormBlock>
-                      <FormBlock title={t('Émission de Devises', 'Currency Emission')} bgColor="gray">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-dark-border">
-                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('Autorisé', 'Authorized')}</span>
-                            <Toggle checked={formData.autoriserEmission || false} onChange={(v: boolean) => updateForm('autoriserEmission', v)} />
-                          </div>
-                          {formData.autoriserEmission && (
-                            <div className="grid grid-cols-2 gap-4 pt-2">
-                              <FormInput label={t('Type de transaction', 'Transaction type')} value={formData.typeTransactionEmission || ''} onChange={(e) => updateForm('typeTransactionEmission', e.target.value)} placeholder={t('ex: VIREMENT', 'e.g. TRANSFER')} />
-                              <FormInput label={t('Devises d\'émission', 'Emission currencies')} value={formData.devisesEmission || ''} onChange={(e) => updateForm('devisesEmission', e.target.value)} placeholder="USD, EUR..." />
-                              <FormInput label={t('Nature cours de change', 'Exchange rate nature')} value={formData.natureCoursChangeEmission || ''} onChange={(e) => updateForm('natureCoursChangeEmission', e.target.value)} />
-                              <FormInput label={t('Plafond montant devise', 'Currency amount ceiling')} type="number" step="0.01" value={String(formData.plafondMontantDevise || 0)} onChange={(e) => updateForm('plafondMontantDevise', parseFloat(e.target.value) || 0)} />
-                              <div className="flex items-center justify-between py-2 col-span-2 border-t border-gray-100 dark:border-dark-border">
-                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('Autorisation Office de Change', 'Exchange Office Authorization')}</span>
-                                <Toggle checked={formData.autorisationOC || false} onChange={(v: boolean) => updateForm('autorisationOC', v)} />
-                              </div>
-                              {formData.autorisationOC && (
-                                <FormInput label={t('Référence autorisation OC', 'OC authorization reference')} value={formData.refAutorisationOC || ''} onChange={(e) => updateForm('refAutorisationOC', e.target.value)} className="col-span-2" />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </FormBlock>
-                    </FormSection>
-                  </>
-                )}
-
-                {/* ══ TAB 1 (CLIENT) / TAB 2 (PARTNER) â€” COMMISSIONS & ABONNEMENT ══ */}
-                {((isClient && activeFormTab === 1) || (!isClient && activeFormTab === 2)) && (
-                  <>
-                    {/* ── SECTION 4: COMMISSIONS (PARTNER only) ── */}
-                    {!isClient && (
-                      <FormSection title={t('Paramètres de Commission', 'Commission Settings')} subtitle={t('Configuration des commissions par type de transfert', 'Per-transfer-type commission configuration')}>
-                        <div className="col-span-full card-base overflow-hidden border border-gray-100 dark:border-dark-border">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-dark-border">
-                              <tr>
-                                <th className="px-5 py-4 text-left font-bold text-xs uppercase tracking-widest text-gray-400">{t('Type', 'Type')}</th>
-                                <th className="px-5 py-4 text-center font-bold text-xs uppercase tracking-widest text-gray-400">{t('Type Commission', 'Commission Type')}</th>
-                                <th className="px-5 py-4 text-right font-bold text-xs uppercase tracking-widest text-gray-400">{t('Montant', 'Amount')}</th>
-                                <th className="px-5 py-4 text-right font-bold text-xs uppercase tracking-widest text-gray-400">{t('Taux (%)', 'Rate (%)')}</th>
-                                <th className="px-5 py-4 text-right font-bold text-xs uppercase tracking-widest text-gray-400">Min</th>
-                                <th className="px-5 py-4 text-right font-bold text-xs uppercase tracking-widest text-gray-400">Max</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 dark:divide-dark-border">
-                              {TRANSFER_TYPES.map((tt) => (
-                                <tr key={tt.commTypeKey} className="hover:bg-orange-50/20 transition-colors">
-                                  <td className="px-5 py-4 font-semibold text-gray-700 dark:text-gray-300">{tt.label}</td>
-                                  <td className="px-5 py-4 text-center">
-                                    <select
-                                      value={(formData as any)[tt.commTypeKey] || 'Flat'}
-                                      onChange={(e) => updateForm(tt.commTypeKey, e.target.value)}
-                                      className="bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl px-3 py-2 text-sm font-bold focus:ring-bcp-orange/20 focus:border-bcp-orange"
-                                    >
-                                      <option value="Flat">{t('Forfaitaire', 'Flat')}</option>
-                                      <option value="Percentage">{t('Pourcentage', 'Percentage')}</option>
-                                      <option value="Mixed">{t('Mixte', 'Mixed')}</option>
-                                      <option value="0">{t('Aucune (0)', 'None (0)')}</option>
-                                    </select>
-                                  </td>
-                                  <td className="px-5 py-4 text-right">
-                                    <input type="number" step="0.01" value={(formData as any)[tt.commAmountKey] || 0}
-                                      onChange={(e) => updateForm(tt.commAmountKey, parseFloat(e.target.value) || 0)}
-                                      className="w-28 text-right bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl px-3 py-2 font-bold focus:ring-bcp-orange/20 focus:border-bcp-orange transition-all" />
-                                  </td>
-                                  <td className="px-5 py-4 text-right">
-                                    <input type="number" step="0.01" value={(formData as any)[tt.commRateKey] || 0}
-                                      onChange={(e) => updateForm(tt.commRateKey, parseFloat(e.target.value) || 0)}
-                                      className="w-28 text-right bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl px-3 py-2 font-bold focus:ring-bcp-orange/20 focus:border-bcp-orange transition-all" />
-                                  </td>
-                                  <td className="px-5 py-4 text-right">
-                                    <input type="number" step="0.01" value={(formData as any)[tt.commMinKey] || ''}
-                                      onChange={(e) => updateForm(tt.commMinKey, e.target.value ? parseFloat(e.target.value) : undefined)}
-                                      placeholder="â€”"
-                                      className="w-24 text-right bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl px-3 py-2 font-bold focus:ring-bcp-orange/20 focus:border-bcp-orange transition-all" />
-                                  </td>
-                                  <td className="px-5 py-4 text-right">
-                                    <input type="number" step="0.01" value={(formData as any)[tt.commMaxKey] || ''}
-                                      onChange={(e) => updateForm(tt.commMaxKey, e.target.value ? parseFloat(e.target.value) : undefined)}
-                                      placeholder="â€”"
-                                      className="w-24 text-right bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl px-3 py-2 font-bold focus:ring-bcp-orange/20 focus:border-bcp-orange transition-all" />
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </FormSection>
-                    )}
-
-                    {/* ── SECTION 5: CHANGE & TARIFS ── */}
-                    <FormSection title={t('Change & Tarification', 'Exchange & Tariff')} subtitle={t('Taux de change et conditions tarifaires', 'Exchange rates and fee conditions')}>
-                      <FormBlock title={t('Paramètres de Change', 'Exchange Settings')} bgColor="gray">
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormInput
-                            label={t('Nature Taux de Change', 'Exchange Rate Nature')}
-                            value={formData.exchangeRateNature || '0'}
-                            onChange={(e) => updateForm('exchangeRateNature', e.target.value)}
-                            placeholder="0"
-                          />
-                          <FormInput
-                            label={t('Gain de Change %', 'Exchange Gain %')}
-                            type="number"
-                            step="0.01"
-                            value={String(formData.exchangeGainPercentage || 0)}
-                            onChange={(e) => updateForm('exchangeGainPercentage', parseFloat(e.target.value) || 0)}
-                          />
-                        </div>
-                      </FormBlock>
-
-                      <FormBlock title={t('Conditions Tarifaires', 'Tariff Conditions')} bgColor="orange">
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormSelect
-                            label={t('Mode de Frais', 'Fee Mode')}
-                            value={formData.feeMode || ''}
-                            onChange={(e) => updateForm('feeMode', e.target.value)}
-                            options={[
-                              { value: '', label: t('Aucun', 'None') },
-                              { value: 'OUR', label: t('OUR (Émetteur paie)', 'OUR (Sender pays)') },
-                              { value: 'BEN', label: t('BEN (Bénéficiaire paie)', 'BEN (Receiver pays)') },
-                              { value: 'SHA', label: t('SHA (Partagé)', 'SHA (Shared)') },
-                            ]}
-                          />
-                          <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-dark-bg-soft/50 border border-gray-100 dark:border-dark-border">
-                            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('Remboursement', 'Reimbursement')}</span>
-                            <Toggle checked={formData.reimbursement || false} onChange={(checked: boolean) => updateForm('reimbursement', checked)} />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-dark-bg-soft/50 border border-gray-100 dark:border-dark-border">
-                            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('Facturation Mensuelle', 'Monthly Billing')}</span>
-                            <Toggle checked={formData.monthlyBilling || false} onChange={(checked: boolean) => updateForm('monthlyBilling', checked)} />
-                          </div>
-                          <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-dark-bg-soft/50 border border-gray-100 dark:border-dark-border">
-                            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('Débit Immédiat', 'Immediate Debit')}</span>
-                            <Toggle checked={formData.immediateDebit || false} onChange={(checked: boolean) => updateForm('immediateDebit', checked)} />
-                          </div>
-                        </div>
-                      </FormBlock>
-                    </FormSection>
-
-                    {/* ── SECTION 6: ABONNEMENT ── */}
-                    <FormSection title={t('Abonnement', 'Subscription')} subtitle={t('Configuration des frais d\'abonnement', 'Subscription fee configuration')}>
-                      <FormBlock title={t('Détails d\'Abonnement', 'Subscription Details')} bgColor="gray">
-                        <div className="grid grid-cols-3 gap-4">
-                          <FormInput
-                            label={t('Frais d\'Abonnement', 'Subscription Fee')}
-                            type="number"
-                            step="0.01"
-                            value={String(formData.subscriptionFee || 0)}
-                            onChange={(e) => updateForm('subscriptionFee', parseFloat(e.target.value) || 0)}
-                          />
-                          <FormInput
-                            label={t('Périodicité', 'Periodicity')}
-                            value={formData.subscriptionPeriodicity || ''}
-                            onChange={(e) => updateForm('subscriptionPeriodicity', e.target.value)}
-                            placeholder={t('ex: Mensuel', 'e.g. Monthly')}
-                          />
-                          <FormInput
-                            label={t('Compte de Facturation', 'Billing Account')}
-                            type="number"
-                            value={String(formData.subscriptionBillingAccount || 0)}
-                            onChange={(e) => updateForm('subscriptionBillingAccount', parseFloat(e.target.value) || 0)}
-                            placeholder={t('Numéro de compte', 'Billing account number')}
-                          />
-                        </div>
-                      </FormBlock>
-                    </FormSection>
-
-                    {/* ── SECTION 8: CONFORMITÉ (PARTNER only) ── */}
-                    {!isClient && (
-                      <FormSection title={t('Conformité', 'Compliance')} subtitle={t('Paramétrage des pièces justificatives requises par transaction', 'Required document controls per transaction')}>
-                        <FormBlock title={t('Donneur d\'Ordre', 'Principal')} bgColor="gray">
-                          <div className="space-y-3">
-                            {[
-                              { key: 'conformiteDOTypePiece', label: t('Type de pièce d\'identité', 'ID document type') },
-                              { key: 'conformiteDONumPiece', label: t('N° de pièce d\'identité', 'ID document number') },
-                              { key: 'conformiteDODateNaissance', label: t('Date de naissance', 'Date of birth') },
-                              { key: 'conformiteDOPaysNaissance', label: t('Pays de naissance', 'Country of birth') },
-                              { key: 'conformiteDOAdresse', label: t('Adresse complète de résidence', 'Full address') },
-                              { key: 'conformiteDOVilleResidence', label: t('Ville de résidence', 'City of residence') },
-                            ].map(({ key, label }) => (
-                              <div key={key} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-dark-border last:border-0">
-                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</span>
-                                <Toggle checked={(formData as any)[key] || false} onChange={(v: boolean) => updateForm(key as any, v)} />
-                              </div>
-                            ))}
-                          </div>
-                        </FormBlock>
-                        <FormBlock title={t('Bénéficiaire', 'Beneficiary')} bgColor="orange">
-                          <div className="space-y-3">
-                            {[
-                              { key: 'conformiteBenefTypePiece', label: t('Type de pièce d\'identité', 'ID document type') },
-                              { key: 'conformiteBenefNumPiece', label: t('N° de pièce d\'identité', 'ID document number') },
-                              { key: 'conformiteBenefAdresse', label: t('Adresse complète de résidence', 'Full address') },
-                              { key: 'conformiteBenefVilleResidence', label: t('Ville de résidence', 'City of residence') },
-                              { key: 'conformiteBenefPaysResidence', label: t('Pays de résidence', 'Country of residence') },
-                            ].map(({ key, label }) => (
-                              <div key={key} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-dark-border last:border-0">
-                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</span>
-                                <Toggle checked={(formData as any)[key] || false} onChange={(v: boolean) => updateForm(key as any, v)} />
-                              </div>
-                            ))}
-                          </div>
-                        </FormBlock>
-                      </FormSection>
-                    )}
-
-                    {/* ── SECTION 8b: FICHIER SYNTHESE ── */}
-                    {!isClient && (
-                      <FormSection title={t('Fichier de Synthèse', 'Synthesis File')} subtitle={t('Paramétrage du fichier sort / récapitulatif', 'Sort file / summary receipt configuration')}>
-                        <FormBlock title={t('Fichier Sort', 'Sort File')} bgColor="gray">
-                          <div className="flex items-center justify-between py-2">
-                            <div>
-                              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('Réception du fichier de synthèse (sort)', 'Receive synthesis file (sort)')}</span>
-                              <p className="text-xs text-gray-400 mt-0.5">{t('Le partenaire souhaite recevoir le fichier récapitulatif', 'Partner wishes to receive the summary file')}</p>
-                            </div>
-                            <Toggle checked={formData.fichierSynthese ?? true} onChange={(v: boolean) => updateForm('fichierSynthese', v)} />
-                          </div>
-                        </FormBlock>
-                      </FormSection>
-                    )}
-
-                    {/* ── SECTION 9: FACTURATION ── */}
-                    <FormSection title={t('Facturation', 'Billing')} subtitle={t('Frais d\'installation et mode de facturation', 'Setup fees and billing mode')}>
-                      <FormBlock title={t('Configuration de Facturation', 'Billing Configuration')} bgColor="gray">
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormInput label={t('Frais d\'installation (Setup Fee)', 'Setup Fee')} type="number" step="0.01" value={String(formData.setupFee || 0)} onChange={(e) => updateForm('setupFee', parseFloat(e.target.value) || 0)} />
-                          <FormSelect label={t('Mode de facturation', 'Billing mode')} value={formData.billingMode || ''} onChange={(e) => updateForm('billingMode', e.target.value)} options={[
-                            { value: '', label: t('Sélectionner...', 'Select...') },
-                            { value: 'PAR_TRANSACTION', label: t('Par transaction', 'Per transaction') },
-                            { value: 'MENSUELLE', label: t('Mensuelle', 'Monthly') },
-                            { value: 'LES_DEUX', label: t('Les deux', 'Both') },
-                          ]} />
-                        </div>
-                        <div className="mt-4 space-y-3">
-                          <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-dark-border">
-                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('Setup fee facturé', 'Setup fee billed')}</span>
-                            <Toggle checked={formData.setupFeeBilled || false} onChange={(v: boolean) => updateForm('setupFeeBilled', v)} />
-                          </div>
-                          <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-dark-border">
-                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('Dérogation tarifaire', 'Pricing derogation')}</span>
-                            <Toggle checked={formData.derogation || false} onChange={(v: boolean) => updateForm('derogation', v)} />
-                          </div>
-                          {formData.derogation && (
-                            <FormInput label={t('Détails de la dérogation', 'Derogation details')} value={formData.derogationDetails || ''} onChange={(e) => updateForm('derogationDetails', e.target.value)} placeholder={t('Précisez les conditions de dérogation...', 'Specify derogation conditions...')} />
-                          )}
-                        </div>
-                      </FormBlock>
-                    </FormSection>
-                  </>
-                )}
-
-                {/* ── NAVIGATION & ACTIONS ── */}
-                <div className="flex justify-between items-center pt-10 border-t border-gray-100 dark:border-dark-border">
-                  {/* Left side: Cancel + Previous */}
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={
-                        viewMode === 'resume-draft'
-                          ? () => { setViewMode('drafts'); setSelectedPartner(null); setFormData({...DEFAULT_FORM}); setFormErrors({}); setActiveFormTab(0); }
-                          : viewMode === 'create'
-                          ? () => { setFormData({...DEFAULT_FORM}); setFormErrors({}); setSelectedPartner(null); setActiveFormTab(0); setViewMode('choose-type'); }
-                          : resetForm
-                      }
-                      className="px-6 py-3 rounded-2xl font-bold text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-bg-soft transition-all text-sm"
-                    >
-                      {t('Annuler', 'Cancel')}
-                    </button>
-                    {activeFormTab > 0 && (
-                      <button
-                        onClick={() => setActiveFormTab(activeFormTab - 1)}
-                        className="flex items-center space-x-2 px-6 py-3 rounded-2xl font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-dark-bg-soft hover:bg-gray-200 dark:hover:bg-dark-border transition-all text-sm"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                        <span>{t('Précédent', 'Previous')}</span>
-                      </button>
-                    )}
+            {/* TAB 1 — TRANSFERTS & PLAFONDS */}
+            {activeFormTab === 1 && (
+              <div className="space-y-8">
+                <div>
+                  <div className="flex items-center space-x-3 mb-5">
+                    <div className="w-1 h-6 bg-bcp-orange rounded-full" />
+                    <h2 className="font-bold text-lg text-gray-900 dark:text-white">{t('Types de transaction & plafond autorisés', 'Authorized Transaction Types & Limits')}</h2>
                   </div>
-
-                  {/* Right side: Draft + Next/Submit */}
-                  <div className="flex items-center space-x-4">
-                    {viewMode === 'create' && (
-                      <button
-                        onClick={handleSaveDraft}
-                        className="px-8 py-4 bg-white border-2 border-gray-200 dark:border-dark-border text-gray-700 dark:text-gray-300 rounded-2xl font-black text-sm uppercase tracking-widest hover:border-bcp-orange hover:text-bcp-orange transition-all flex items-center space-x-3"
-                      >
-                        <Save className="w-5 h-5" />
-                        <span>{t('Brouillon', 'Draft')}</span>
-                      </button>
-                    )}
-
-                    {activeFormTab < lastTab ? (
-                      <button
-                        onClick={() => setActiveFormTab(activeFormTab + 1)}
-                        className="flex items-center space-x-3 px-10 py-4 bg-gradient-to-r from-bcp-orange to-bcp-orange-dark text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:scale-[1.02] transition-all"
-                      >
-                        <span>{t('Suivant', 'Next')}</span>
-                        <ChevronRight className="w-5 h-5" />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleSubmit}
-                        className="px-12 py-4 bg-gradient-to-r from-bcp-orange to-bcp-orange-dark text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:scale-[1.02] hover:shadow-orange-500/30 transition-all flex items-center space-x-3"
-                      >
-                        <Send className="w-5 h-5" />
-                        <span>
-                          {viewMode === 'create' || viewMode === 'resume-draft'
-                            ? t('Soumettre pour Validation', 'Submit for Validation')
-                            : t('Soumettre la Modification', 'Submit Modification')}
-                        </span>
-                      </button>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {FORM_TRANSFER_TYPES.map((tt) => {
+                      const enabled = !!(formData as any)[tt.allowedKey];
+                      return (
+                        <div key={tt.key} className={`p-5 rounded-2xl border-2 transition-all ${enabled ? 'border-bcp-orange bg-orange-50/20 dark:bg-bcp-orange/5' : 'border-gray-100 dark:border-dark-border bg-gray-50/30 dark:bg-dark-bg-soft/30'}`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{tt.label}</span>
+                            <Toggle checked={enabled} onChange={(v: boolean) => updateForm(tt.allowedKey, v)} />
+                          </div>
+                          {enabled && !tt.noLimit && tt.limitKey && (
+                            <div className="mt-3">
+                              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{t('Plafond', 'Limit')}</label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={(formData as any)[tt.limitKey] || ''}
+                                onChange={(e) => {
+                                  const v = parseFloat(e.target.value);
+                                  updateForm(tt.limitKey!, isNaN(v) ? 0 : Math.max(0, v));
+                                }}
+                                className="w-full px-4 py-2.5 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl text-sm font-bold focus:ring-bcp-orange/20 focus:border-bcp-orange outline-none transition-all"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
+                {formData.allowedMassCashPickupTransfer && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 rounded-2xl border border-gray-100 dark:border-dark-border bg-orange-50/10 dark:bg-bcp-orange/5">
+                    <FormInput
+                      label={t("Nature d'opération", 'Operation Nature')}
+                      type="number"
+                      min={0}
+                      value={formData.natureMassCashPickupTransfer || ''}
+                      onChange={(e) => { const v = parseFloat(e.target.value); updateForm('natureMassCashPickupTransfer', isNaN(v) ? 0 : Math.max(0, v)); }}
+                    />
+                    <FormInput
+                      label={t('Durée validité', 'Validity duration')}
+                      type="number"
+                      min={0}
+                      value={formData.validDaysMassCashPickupTransfer || ''}
+                      onChange={(e) => { const v = parseInt(e.target.value); updateForm('validDaysMassCashPickupTransfer', isNaN(v) ? 0 : Math.max(0, v)); }}
+                    />
+                  </div>
+                )}
+
+                <div className={`p-5 rounded-2xl border-2 transition-all ${formData.autoriserReception ? 'border-bcp-orange bg-orange-50/20 dark:bg-bcp-orange/5' : 'border-gray-100 dark:border-dark-border'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-1 h-6 bg-bcp-orange rounded-full" />
+                      <span className="font-bold text-gray-900 dark:text-white">{t('Transfert en devise (Reception)', 'Currency Transfer (Incoming)')}</span>
+                    </div>
+                    <Toggle checked={formData.autoriserReception || false} onChange={(v: boolean) => updateForm('autoriserReception', v)} />
+                  </div>
+                  {formData.autoriserReception && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-orange-100 dark:border-bcp-orange/20">
+                      <SearchableSelect
+                        label={t('Devise', 'Currency')}
+                        value={formData.devisesReception || ''}
+                        onChange={(v) => updateForm('devisesReception', v)}
+                        options={CURRENCIES.map((c) => ({ value: c.code, label: `${c.code} - ${c.nameFr}` }))}
+                        placeholder="-- Rechercher une devise --"
+                      />
+                      <FormInput
+                        label={t('Plafond', 'Limit')}
+                        type="number"
+                        min={0}
+                        value={formData.plafondReception || ''}
+                        onChange={(e) => { const v = parseFloat(e.target.value); updateForm('plafondReception', isNaN(v) ? 0 : Math.max(0, v)); }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className={`p-5 rounded-2xl border-2 transition-all ${formData.autoriserEmission ? 'border-bcp-orange bg-orange-50/20 dark:bg-bcp-orange/5' : 'border-gray-100 dark:border-dark-border'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-1 h-6 bg-bcp-orange rounded-full" />
+                      <span className="font-bold text-gray-900 dark:text-white">{t('Transfert en devise (Emission)', 'Currency Transfer (Outgoing)')}</span>
+                    </div>
+                    <Toggle checked={formData.autoriserEmission || false} onChange={(v: boolean) => updateForm('autoriserEmission', v)} />
+                  </div>
+                  {formData.autoriserEmission && (
+                    <div className="space-y-4 pt-2 border-t border-orange-100 dark:border-bcp-orange/20">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormSelect
+                          label={t('Type de transfert', 'Transfer type')}
+                          required
+                          value={formData.typeTransactionEmission || ''}
+                          onChange={(e) => updateForm('typeTransactionEmission', e.target.value)}
+                          options={[
+                            { value: '', label: '-- Choisir --' },
+                            { value: 'SWIFT', label: 'SWIFT' },
+                            { value: 'SEPA', label: 'SEPA' },
+                            { value: 'Virement ordinaire', label: 'Virement ordinaire' },
+                            { value: 'Autre', label: t('Autre', 'Other') },
+                          ]}
+                        />
+                        <FormSelect
+                          label={t('Autorisation OC', 'OC Authorization')}
+                          required
+                          value={formData.autorisationOC ? 'Exceptionnel' : 'Standard'}
+                          onChange={(e) => updateForm('autorisationOC', e.target.value === 'Exceptionnel')}
+                          options={[
+                            { value: 'Standard', label: 'Standard' },
+                            { value: 'Exceptionnel', label: 'Exceptionnel' },
+                          ]}
+                        />
+                      </div>
+                      {formData.autorisationOC && (
+                        <FormInput
+                          label={t('Ref Autorisation', 'Authorization ref.')}
+                          value={formData.refAutorisationOC || ''}
+                          onChange={(e) => updateForm('refAutorisationOC', e.target.value)}
+                        />
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <SearchableSelect
+                          label={t('Devise', 'Currency')}
+                          value={formData.devisesEmission || ''}
+                          onChange={(v) => updateForm('devisesEmission', v)}
+                          options={CURRENCIES.map((c) => ({ value: c.code, label: `${c.code} - ${c.nameFr}` }))}
+                          placeholder="-- Rechercher une devise --"
+                        />
+                        <FormSelect
+                          label={t('Nature cours de change', 'Exchange rate nature')}
+                          required
+                          value={formData.natureCoursChangeEmission || ''}
+                          onChange={(e) => updateForm('natureCoursChangeEmission', e.target.value)}
+                          options={[
+                            { value: '', label: '-- Choisir --' },
+                            { value: 'Fixing', label: 'Fixing' },
+                            { value: 'Negocié', label: 'Négocié' },
+                            { value: 'Spot', label: 'Spot' },
+                          ]}
+                        />
+                      </div>
+                      <FormInput
+                        label={t('Plafond', 'Limit')}
+                        type="number"
+                        min={0}
+                        value={formData.plafondMontantDevise || ''}
+                        onChange={(e) => { const v = parseFloat(e.target.value); updateForm('plafondMontantDevise', isNaN(v) ? 0 : Math.max(0, v)); }}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
+            )}
+
+            {/* TAB 2 — ABONNEMENT & CONTRÔLES */}
+            {activeFormTab === 2 && (
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="w-1 h-6 bg-bcp-orange rounded-full" />
+                  <h2 className="font-bold text-lg text-gray-900 dark:text-white">{t('Abonnement', 'Subscription')}</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormInput
+                    label={t("Frais d'abonnement (défaut: 200)", 'Subscription Fee (default: 200)')}
+                    type="number"
+                    min={0}
+                    value={formData.subscriptionFee ?? ''}
+                    onChange={(e) => { const v = parseFloat(e.target.value); updateForm('subscriptionFee', isNaN(v) ? undefined : Math.max(0, v)); }}
+                    placeholder="200"
+                  />
+                  <FormSelect
+                    label={t('Périodicité', 'Periodicity')}
+                    required
+                    value={formData.subscriptionPeriodicity || ''}
+                    onChange={(e) => updateForm('subscriptionPeriodicity', e.target.value)}
+                    error={formErrors.subscriptionPeriodicity || undefined}
+                    options={[
+                      { value: '', label: '-- Choisir --' },
+                      { value: 'Mensuel', label: 'Mensuel' },
+                      { value: 'Trimestriel', label: 'Trimestriel' },
+                      { value: 'Semestriel', label: 'Semestriel' },
+                      { value: 'Annuel', label: 'Annuel' },
+                    ]}
+                  />
+                </div>
+                <FormInput
+                  label={t('Compte de règlement des frais', 'Subscription Billing Account')}
+                  type="number"
+                  min={0}
+                  value={formData.subscriptionBillingAccount ?? ''}
+                  onChange={(e) => { const v = parseFloat(e.target.value); updateForm('subscriptionBillingAccount', isNaN(v) ? undefined : Math.max(0, v)); }}
+                  placeholder={t('Numéro de compte', 'Account number')}
+                />
+                <div className="flex items-center space-x-3 mt-8 mb-2">
+                  <div className="w-1 h-6 bg-bcp-orange rounded-full" />
+                  <h2 className="font-bold text-lg text-gray-900 dark:text-white">{t('Contrôles opérationnels', 'Operational Controls')}</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormSelect
+                    label={t('Contrôle provision', 'Provision Control')}
+                    required
+                    value={formData.paymentNature || ''}
+                    onChange={(e) => updateForm('paymentNature', e.target.value)}
+                    error={formErrors.paymentNature || undefined}
+                    options={[
+                      { value: '', label: '-- Choisir --' },
+                      { value: 'Oui', label: 'Oui' },
+                      { value: 'Non', label: 'Non' },
+                    ]}
+                  />
+                  <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-dark-bg-soft/50 border border-gray-100 dark:border-dark-border">
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('Reception du Fichier de synthèse (sort)', 'Receive synthesis file (sort)')}</span>
+                    <Toggle checked={formData.fichierSynthese ?? true} onChange={(v: boolean) => updateForm('fichierSynthese', v)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3 — CONFORMITÉS (Partenaire uniquement) */}
+            {activeFormTab === 3 && showConformite && (
+              <div className="space-y-8">
+                <div>
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-1 h-6 bg-bcp-orange rounded-full" />
+                    <h2 className="font-bold text-lg text-gray-900 dark:text-white">{t("Donneur d'ordre — champs autorisés", 'Payer — allowed fields')}</h2>
+                  </div>
+                  <p className="text-sm text-gray-500 dark:text-dark-text-dim mb-4 ml-4">{t('Activez les champs facultatifs autorisés pour ce partenaire', 'Enable optional allowed fields for this partner')}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[
+                      { key: 'conformiteDOTypePiece', label: t("Type de pièce d'identité du donneur d'ordre", 'Payer ID type') },
+                      { key: 'conformiteDONumPiece', label: t("N° de pièce d'identité du donneur d'ordre", 'Payer ID number') },
+                      { key: 'conformiteDODateNaissance', label: t('Date de naissance du donneur d\'ordre', 'Payer birth date') },
+                      { key: 'conformiteDOPaysNaissance', label: t('Pays de naissance du donneur d\'ordre', 'Payer birth country') },
+                      { key: 'conformiteDOAdresse', label: t('Adresse complète de résidence du donneur d\'ordre', 'Payer full address') },
+                      { key: 'conformiteDOVilleResidence', label: t('Ville de résidence du donneur d\'ordre', 'Payer city') },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center justify-between px-4 py-3 rounded-2xl bg-gray-50/50 dark:bg-dark-bg-soft/50 border border-gray-100 dark:border-dark-border">
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</span>
+                        <Toggle checked={(formData as any)[key] || false} onChange={(v: boolean) => updateForm(key as any, v)} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-1 h-6 bg-bcp-orange rounded-full" />
+                    <h2 className="font-bold text-lg text-gray-900 dark:text-white">{t('Bénéficiaire — champs autorisés', 'Beneficiary — allowed fields')}</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[
+                      { key: 'conformiteBenefTypePiece', label: t("Type de pièce d'identité du bénéficiaire", 'Beneficiary ID type') },
+                      { key: 'conformiteBenefNumPiece', label: t("N° de pièce d'identité du bénéficiaire", 'Beneficiary ID number') },
+                      { key: 'conformiteBenefAdresse', label: t('Adresse complète de résidence du bénéficiaire', 'Beneficiary full address') },
+                      { key: 'conformiteBenefVilleResidence', label: t('Ville de résidence du bénéficiaire', 'Beneficiary city') },
+                      { key: 'conformiteBenefPaysResidence', label: t('Pays de résidence du bénéficiaire', 'Beneficiary country') },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center justify-between px-4 py-3 rounded-2xl bg-gray-50/50 dark:bg-dark-bg-soft/50 border border-gray-100 dark:border-dark-border">
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</span>
+                        <Toggle checked={(formData as any)[key] || false} onChange={(v: boolean) => updateForm(key as any, v)} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          {/* NAVIGATION FOOTER */}
+          <div className="px-8 py-6 border-t border-gray-100 dark:border-dark-border bg-gray-50/30 dark:bg-dark-bg-soft/30 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {activeFormTab > 0 && (
+                <button
+                  onClick={() => setActiveFormTab(activeFormTab - 1)}
+                  className="flex items-center space-x-2 px-6 py-3 rounded-2xl font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-dark-bg-soft hover:bg-gray-200 dark:hover:bg-dark-border transition-all text-sm"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>{t('Précédent', 'Previous')}</span>
+                </button>
+              )}
             </div>
-          );
-        })()}
+            <div className="flex items-center space-x-4">
+              {activeFormTab < lastTabIdx ? (
+                <button
+                  onClick={() => setActiveFormTab(activeFormTab + 1)}
+                  className="flex items-center space-x-2 px-8 py-3 bg-gradient-to-r from-bcp-orange to-bcp-orange-dark text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-500/20 hover:scale-[1.02] transition-all"
+                >
+                  <span>{t('Suivant', 'Next')}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  className="flex items-center space-x-3 px-10 py-3 bg-gradient-to-r from-bcp-orange to-bcp-orange-dark text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:scale-[1.02] transition-all"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>
+                    {viewMode === 'create' || viewMode === 'resume-draft'
+                      ? t('Soumettre pour Validation', 'Submit for Validation')
+                      : t('Soumettre la Modification', 'Submit Modification')}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
       </div>
     );
   }
+
+
 
   // ═══════════════════════════════════════════════════
   //  VALIDATE VIEW (read-only + approve/reject)

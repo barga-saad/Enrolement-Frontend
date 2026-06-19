@@ -117,8 +117,19 @@ select {
 
 /* Premium Form Input */
 .premium-input {
-  @apply w-full px-4 py-3 rounded-xl border border-warm-300 dark:border-dark-border bg-white/80 dark:bg-dark-bg-soft 
+  @apply w-full px-4 py-3 rounded-xl border border-warm-300 dark:border-dark-border bg-white/80 dark:bg-dark-bg-soft
          focus:ring-2 focus:ring-bcp-orange focus:border-transparent outline-none transition-all duration-200 text-bcp-brown dark:text-white;
+}
+
+/* Hide number input spinners */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* BCP Gradient backgrounds */

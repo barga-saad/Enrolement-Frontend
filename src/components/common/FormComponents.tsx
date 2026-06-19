@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AlertCircle, CheckCircle2, ChevronDown } from 'lucide-react';
 
 interface FormSectionProps {
@@ -132,6 +132,91 @@ export const FormSelect = ({
     {error && <p className="text-xs font-bold text-red-500 ml-1 animate-fadeIn">{error}</p>}
   </div>
 );
+
+interface SearchableSelectProps {
+  label: string;
+  required?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+  error?: string;
+}
+
+export const SearchableSelect = ({
+  label,
+  required,
+  value,
+  onChange,
+  options,
+  placeholder = '-- Choisir --',
+  error,
+}: SearchableSelectProps) => {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const filtered = options.filter((o) =>
+    o.label.toLowerCase().includes(search.toLowerCase())
+  );
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div className="space-y-2 group" ref={containerRef}>
+      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 ml-1 transition-colors group-focus-within:text-bcp-orange">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        <input
+          type="text"
+          autoComplete="off"
+          value={open ? search : (selected?.label || '')}
+          onFocus={() => { setOpen(true); setSearch(''); }}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={placeholder}
+          className={`premium-input pr-10 ${error ? 'border-red-300 dark:border-red-500/30 focus:ring-red-500/10' : ''}`}
+        />
+        <ChevronDown
+          className={`absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+        {open && (
+          <div className="absolute z-50 w-full top-full mt-1 bg-white dark:bg-dark-bg-card border border-gray-200 dark:border-dark-border rounded-xl shadow-xl max-h-56 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-gray-400">Aucun résultat</div>
+            ) : (
+              filtered.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onMouseDown={() => { onChange(o.value); setOpen(false); setSearch(''); }}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors
+                    ${o.value === value
+                      ? 'bg-orange-50 dark:bg-bcp-orange/10 text-bcp-orange font-bold'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-bcp-orange/10 hover:text-bcp-orange'
+                    }`}
+                >
+                  {o.label}
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+      {error && <p className="text-xs font-bold text-red-500 ml-1 animate-fadeIn">{error}</p>}
+    </div>
+  );
+};
 
 interface FormToggleRowProps {
   label: string;

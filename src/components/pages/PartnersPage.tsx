@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import { Plus, Eye, Check, X, Edit2, Search, Filter, Download, Shield, FileText, Send, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FormInput, FormSelect, SearchableSelect } from '../common/FormComponents';
+import { countryLabel } from '../common/CountrySelect';
 import { COUNTRIES } from '../../utils/countries';
 import { CURRENCIES } from '../../utils/currencies';
 import { Table, TableColumn } from '../common/Table';
@@ -483,7 +484,8 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
     if (partner.id) {
       try {
         const res = await apiService.getValidationHistory(partner.id);
-        setValidationHistory(Array.isArray(res.data) ? res.data : []);
+        const histData = res.data?.data ?? res.data;
+        setValidationHistory(Array.isArray(histData) ? histData : []);
       } catch { /* ignore */ }
     }
   };
@@ -780,7 +782,7 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
             </button>
             {canCreate && !initialMode && (
               <button
-                onClick={() => { setViewMode('create'); setSelectedPartner(null); }}
+                onClick={() => { setViewMode('create'); setSelectedPartner(null); setFormData({...DEFAULT_FORM}); setFormErrors({}); }}
                 className="btn-primary space-x-2"
               >
                 <Plus size={20} />
@@ -842,6 +844,9 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
   }
 
   // ═══════════════════════════════════════════════════
+  //  CHOOSE TYPE VIEW
+  // ═══════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════
   //  CREATE / EDIT FORM VIEW  (reference-style 4 tabs)
   // ═══════════════════════════════════════════════════
   if (viewMode === 'create' || viewMode === 'edit' || viewMode === 'resume-draft') {
@@ -875,16 +880,7 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
               {t('Remplissez le formulaire puis soumettez pour validation', 'Fill the form then submit for validation')}
             </p>
           </div>
-          <button
-            onClick={viewMode === 'resume-draft'
-              ? () => { setViewMode('drafts'); setSelectedPartner(null); setFormData({...DEFAULT_FORM}); setFormErrors({}); }
-              : viewMode === 'create'
-              ? () => { setFormData({...DEFAULT_FORM}); setFormErrors({}); setSelectedPartner(null); setActiveFormTab(0); setViewMode('choose-type'); }
-              : resetForm}
-            className="p-3 text-gray-400 hover:text-red-500 transition-colors"
-          >
-            <X size={24} />
-          </button>
+
         </div>
 
         {/* ── FORM CONTAINER ── */}
@@ -1298,6 +1294,15 @@ const PartnersPage = ({ initialMode }: PartnersPageProps) => {
               )}
             </div>
             <div className="flex items-center space-x-4">
+              {viewMode === 'create' && activeFormTab === lastTabIdx && (
+                <button
+                  onClick={handleSaveDraft}
+                  className="flex items-center space-x-2 px-7 py-3 rounded-2xl font-bold text-sm border-2 border-gray-200 dark:border-dark-border text-gray-600 dark:text-gray-300 hover:border-bcp-orange hover:text-bcp-orange transition-all"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>{t('Enregistrer en brouillon', 'Save as Draft')}</span>
+                </button>
+              )}
               {activeFormTab < lastTabIdx ? (
                 <button
                   onClick={() => setActiveFormTab(activeFormTab + 1)}

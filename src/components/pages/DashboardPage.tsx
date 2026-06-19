@@ -214,61 +214,6 @@ const DashboardPage = () => {
         {isAdmin && <StatCard icon={Shield} label={t('Permissions Système', 'System Permissions')} value={stats.totalPermissions} color="text-cyan-600" />}
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
-        {/* Recent Activity Section */}
-        <div className="card-base overflow-hidden flex flex-col">
-          <div className="bg-gray-50/50 dark:bg-white/5 p-6 border-b border-gray-100 dark:border-dark-border flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
-                {isAdmin ? t('Pulse du Système', 'System Pulse') : t('Vos Partenaires Gérés', 'Your Managed Partners')}
-              </h2>
-              <p className="text-gray-500 dark:text-dark-text-dim text-xs font-medium">{t('Mises à jour en temps réel', 'Real-time status updates')}</p>
-            </div>
-            <button className="text-[10px] font-black text-bcp-orange uppercase tracking-widest hover:underline">{t('Tout Voir', 'View All')}</button>
-          </div>
-
-          <div className="flex-1 divide-y divide-gray-100 dark:divide-dark-border">
-            {loading ? (
-              <div className="p-12 text-center">
-                <div className="w-10 h-10 border-4 border-bcp-orange/20 border-t-bcp-orange rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-400 text-sm font-medium">{t('Synchronisation des données...', 'Synchronizing system data...')}</p>
-              </div>
-            ) : recentActivity.length === 0 ? (
-              <div className="p-12 text-center text-gray-500">
-                <div className="w-20 h-20 bg-gray-50 dark:bg-dark-bg-soft rounded-full flex items-center justify-center mx-auto mb-6">
-                  <TrendingUp size={32} className="opacity-20" />
-                </div>
-                <p className="font-bold text-gray-400">{isAdmin ? t('Aucun signal détecté', 'No pulse detected yet') : t('Prêt à enrôler des partenaires', 'Ready to start enrolling partners')}</p>
-              </div>
-            ) : (
-              recentActivity.map((activity) => (
-                <div key={activity.id} className="p-6 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-all group">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <ActivityIcon type={activity.type} />
-                      <div>
-                        <p className="font-bold text-gray-900 dark:text-white group-hover:text-bcp-orange transition-colors">{activity.action}</p>
-                        <div className="flex items-center space-x-2 mt-0.5">
-                          <span className="text-xs font-medium text-gray-500 dark:text-dark-text-dim">{activity.entity}</span>
-                          <div className="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
-                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-600">{activity.timestamp}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
-                      activity.status === 'success' ? 'bg-green-50 dark:bg-green-500/10 text-green-600' :
-                      activity.status === 'pending' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600' :
-                      'bg-red-50 dark:bg-red-500/10 text-red-600'
-                    }`}>
-                      {activity.status}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

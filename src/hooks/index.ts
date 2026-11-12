@@ -24,10 +24,8 @@ export const useAuth = () => {
     isAuthenticated: auth.isAuthenticated,
     isLoading: auth.isLoading,
     error: auth.error,
-    requiresPasswordChange: auth.requiresPasswordChange,
     login: auth.login,
     logout: auth.logout,
-    changePassword: auth.changePassword,
     refreshUser: auth.refreshUser,
     setError: auth.setError,
   };

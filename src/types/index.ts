@@ -24,7 +24,6 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  requiresPasswordChange: boolean;
 }
 
 export interface LoginRequest {
@@ -42,7 +41,6 @@ export interface LoginResponse {
   firstName: string;
   lastName: string;
   roleNames: string[];
-  requiresPasswordChange: boolean;
 }
 
 export interface ApiResponse<T = any> {
@@ -133,25 +131,6 @@ export interface PartnerUpdateRequest {
   phone?: string;
   address?: string;
   status?: string;
-}
-
-// Transfer Types
-export interface Transfer {
-  id: number;
-  amount: number;
-  currency: string;
-  status: 'PENDING' | 'AUTHORIZED' | 'COMPLETED' | 'REJECTED';
-  partnerId: number;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-}
-
-export interface TransferCreateRequest {
-  amount: number;
-  currency: string;
-  partnerId: number;
 }
 
 // API Response Types

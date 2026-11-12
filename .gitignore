@@ -1,1 +1,9 @@
 node_modules
+
+# Local env overrides (never commit)
+*.local
+
+# Build output / tooling
+dist/
+.vite/
+.idea/

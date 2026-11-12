@@ -6,9 +6,11 @@ export const LanguageToggle = () => {
 
   return (
     <button
+      type="button"
       onClick={toggleLang}
-      className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-warm-300/50 dark:bg-white/5 hover:bg-warm-400/50 dark:hover:bg-white/10 border border-warm-500/20 dark:border-white/10 transition-all duration-300 group shadow-sm"
+      className="flex h-9 items-center space-x-2 px-3 rounded-xl bg-white/80 dark:bg-dark-bg-soft hover:bg-orange-50 dark:hover:bg-bcp-orange/10 border border-gray-200/80 dark:border-white/10 hover:border-bcp-orange/40 transition-colors duration-200 group shadow-sm"
       title={lang === 'FR' ? 'Switch to English' : 'Changer en Français'}
+      aria-label={lang === 'FR' ? 'Switch to English' : 'Changer en Français'}
     >
       <Globe className="w-4 h-4 text-bcp-brown/60 dark:text-white/50 group-hover:text-bcp-orange transition-colors" />
       <span className="text-[10px] font-black text-bcp-brown dark:text-white tracking-widest uppercase">

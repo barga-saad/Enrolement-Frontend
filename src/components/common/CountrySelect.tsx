@@ -10,7 +10,7 @@ interface CountrySelectProps {
   required?: boolean;
   error?: string;
   disabled?: boolean;
-  includeEmpty?: boolean;      // allow "— Aucun —" option
+  includeEmpty?: boolean;      // allow "- Aucun -" option
   emptyLabel?: string;
 }
 
@@ -25,7 +25,7 @@ export const CountrySelect = ({
   emptyLabel,
 }: CountrySelectProps) => {
   const { lang } = useLangStore();
-  const isFr = lang === 'fr';
+  const isFr = lang === 'FR';
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -34,12 +34,6 @@ export const CountrySelect = ({
 
   const selected = value ? findCountryByCode(value) : null;
   const filtered = query ? searchCountries(query) : COUNTRIES;
-
-  const displayName = (code: string) => {
-    const c = findCountryByCode(code);
-    if (!c) return code;
-    return `${c.code} – ${isFr ? c.nameFr : c.nameEn}`;
-  };
 
   // Close on outside click
   useEffect(() => {
@@ -73,8 +67,8 @@ export const CountrySelect = ({
   };
 
   return (
-    <div className="space-y-2 group" ref={containerRef}>
-      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 ml-1 transition-colors group-focus-within:text-bcp-orange">
+    <div className="space-y-1.5 group" ref={containerRef}>
+      <label className="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 ml-0.5 transition-colors group-focus-within:text-bcp-brown dark:group-focus-within:text-bcp-orange-light">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
 
@@ -85,7 +79,7 @@ export const CountrySelect = ({
           onClick={handleOpen}
           disabled={disabled}
           className={`premium-input w-full text-left flex items-center justify-between pr-10 ${
-            error ? 'border-red-300 dark:border-red-500/30' : ''
+            error ? '!border-red-400 dark:!border-red-500 !bg-red-50/40 dark:!bg-red-500/10' : ''
           } ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-dark-bg' : 'cursor-pointer'}`}
         >
           {selected ? (
@@ -97,7 +91,7 @@ export const CountrySelect = ({
             </span>
           ) : (
             <span className="text-gray-400 text-sm">
-              {emptyLabel ?? (isFr ? '— Sélectionner un pays —' : '— Select a country —')}
+              {emptyLabel ?? (isFr ? '- Sélectionner un pays -' : '- Select a country -')}
             </span>
           )}
         </button>
@@ -119,7 +113,7 @@ export const CountrySelect = ({
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute z-50 mt-1 w-72 max-w-full bg-white dark:bg-dark-bg-soft border border-gray-200 dark:border-dark-border rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
+        <div className="absolute z-50 mt-1.5 w-72 max-w-full bg-white dark:bg-dark-bg-soft border border-gray-200/80 dark:border-dark-border rounded-xl shadow-bcp-medium overflow-hidden animate-fadeIn">
           {/* Search input */}
           <div className="p-2 border-b border-gray-100 dark:border-dark-border">
             <div className="relative">
@@ -130,7 +124,7 @@ export const CountrySelect = ({
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder={isFr ? 'Rechercher un pays ou code ISO...' : 'Search country or ISO code...'}
-                className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-bcp-orange/30 text-gray-900 dark:text-white placeholder:text-gray-400"
+                className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:outline-none focus:border-bcp-orange focus:ring-4 focus:ring-bcp-orange/15 text-gray-900 dark:text-white placeholder:text-gray-400"
               />
             </div>
           </div>
@@ -142,12 +136,12 @@ export const CountrySelect = ({
               onClick={() => handleSelect('')}
               className="w-full px-4 py-2.5 text-left text-sm text-gray-400 hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors border-b border-gray-100 dark:border-dark-border"
             >
-              {emptyLabel ?? (isFr ? '— Aucun —' : '— None —')}
+              {emptyLabel ?? (isFr ? '- Aucun -' : '- None -')}
             </button>
           )}
 
           {/* Country list */}
-          <div className="max-h-56 overflow-y-auto">
+          <div className="max-h-56 overflow-y-auto custom-scrollbar">
             {filtered.length === 0 ? (
               <p className="px-4 py-3 text-sm text-gray-400 text-center">
                 {isFr ? 'Aucun résultat' : 'No results'}
@@ -179,7 +173,7 @@ export const CountrySelect = ({
         </div>
       )}
 
-      {error && <p className="text-xs font-bold text-red-500 ml-1 animate-fadeIn">{error}</p>}
+      {error && <p className="text-xs font-medium text-red-600 dark:text-red-400 ml-0.5 animate-fadeIn">{error}</p>}
     </div>
   );
 };
@@ -188,7 +182,7 @@ export const CountrySelect = ({
  * Returns the label for display-only contexts (consult/validate views).
  */
 export function countryLabel(code: string, lang: string): string {
-  if (!code) return '—';
+  if (!code) return '-';
   const c = findCountryByCode(code);
   if (!c) return code;
   return `${c.code} – ${lang === 'fr' ? c.nameFr : c.nameEn}`;

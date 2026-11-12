@@ -7,6 +7,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import { LoginResponse, ApiError, ApiResponse } from '../types';
 import { storage } from '../utils/helpers';
 import { logger } from '../utils/logger';
+import { DEV_AUTH_BYPASS } from '../utils/devAuth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const REQUEST_ID_HEADER = 'X-Request-Id';
@@ -82,6 +83,11 @@ export const createApiClient = (): AxiosInstance => {
         error
       );
 
+      // Dev-only UI preview: there is no session, so let 401s fail quietly instead of redirecting to /login
+      if (DEV_AUTH_BYPASS) {
+        return Promise.reject(error);
+      }
+
       if (error.response?.status === 401 && config && !config._retried) {
         const refreshToken = storage.get('refreshToken');
         if (refreshToken) {
@@ -132,13 +138,13 @@ export const apiService = {
   logout: () =>
     apiClient.post('/auth/logout'),
 
-  changePassword: (username: string, newPassword: string) =>
-    apiClient.post('/auth/change-password', { username, newPassword }),
-
   getMe: (token: string) =>
     apiClient.get<ApiResponse<LoginResponse>>('/auth/me', {
       headers: { Authorization: `Bearer ${token}` },
     }),
+
+  validatePartnerAccount: (accountNumber: string) =>
+    apiClient.post('/v1/partners/validate-account', { accountNumber }),
 
   // User endpoints
   getUsers: () =>
@@ -152,9 +158,6 @@ export const apiService = {
 
   updateUser: (id: number, data: any) =>
     apiClient.put(`/admin/users/${id}`, data),
-
-  deleteUser: (id: number) =>
-    apiClient.delete(`/admin/users/${id}`),
 
   assignRoleToUser: (userId: number, roleId: number) =>
     apiClient.post(`/admin/users/${userId}/roles`, { roleId }),
@@ -178,9 +181,6 @@ export const apiService = {
   updateRole: (id: number, data: any) =>
     apiClient.put(`/admin/roles/${id}`, data),
 
-  deleteRole: (id: number) =>
-    apiClient.delete(`/admin/roles/${id}`),
-
   assignPermissionToRole: (roleId: number, permissionId: number) =>
     apiClient.post(`/admin/roles/${roleId}/permissions`, { permissionId }),
 
@@ -203,8 +203,11 @@ export const apiService = {
   updatePermission: (id: number, data: any) =>
     apiClient.put(`/admin/permissions/${id}`, data),
 
-  deletePermission: (id: number) =>
-    apiClient.delete(`/admin/permissions/${id}`),
+  deactivatePermission: (id: number) =>
+    apiClient.put(`/admin/permissions/${id}`, { isActive: false }),
+
+  activatePermission: (id: number) =>
+    apiClient.put(`/admin/permissions/${id}`, { isActive: true }),
 
   getOwnerCheckPermissions: () =>
     apiClient.get('/admin/permissions/owner-check/true'),
@@ -222,24 +225,8 @@ export const apiService = {
   updatePartner: (_id: string, data: any) =>
     apiClient.put('/v1/update/partners', data),
 
-  deletePartner: (id: string) =>
-    apiClient.delete('/v1/delete/partners', { params: { partnerReferenceNumber: id } }),
-
-  // Transfer endpoints
-  getTransfers: () =>
-    apiClient.get('/v1/read/transfers'),
-
-  getPartnerTransfers: (partnerId: string) =>
-    apiClient.get(`/gealltransfers/${partnerId}`),
-
-  createTransfer: (data: any) =>
-    apiClient.post('/v1/create/transfers', data),
-
-  updateTransfer: (id: string, data: any) =>
-    apiClient.put('/v1/update/transfers', { ...data, id }),
-
-  deleteTransfer: (id: string) =>
-    apiClient.delete('/v1/delete/transfers', { params: { transferReferenceNumber: id } }),
+  updatePartnerStatus: (partnerReferenceNumber: string, partnerStatus: 'ACTIVE' | 'INACTIVE') =>
+    apiClient.patch(`/v1/partners/${partnerReferenceNumber}/status`, { partnerStatus }),
 
   // Validation endpoints
   submitForValidation: (partnerId: number) =>
@@ -281,5 +268,8 @@ export const apiService = {
     apiClient.get(`/admin/audit-logs/by-user/${userId}?page=${page}&size=${size}`),
 
   getAuditLogsByDateRange: (startDate: string, endDate: string, page = 0, size = 20) =>
-    apiClient.get(`/admin/audit-logs/by-date-range?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&page=${page}&size=${size}`),
+    apiClient.get(`/admin/audit-logs/by-date-range?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&page=${page}&size=${size}`),
+  // Aggregated partner counts for the admin dashboard (counts only, no partner data)
+  getPartnerStats: () =>
+    apiClient.get('/admin/stats/partners'),
 };

@@ -1,6 +1,6 @@
 /**
  * Static ISO 3166-1 alpha-2 country list.
- * Used for searchable dropdowns — no backend call required.
+ * Used for searchable dropdowns - no backend call required.
  * Sorted alphabetically by French name.
  */
 

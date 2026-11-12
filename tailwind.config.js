@@ -7,7 +7,46 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'Segoe UI', 'system-ui', '-apple-system', 'Helvetica Neue', 'Arial', 'sans-serif'],
+      },
       colors: {
+        // Warm taupe grey: every `gray-*` utility leans toward the brand brown instead of cold blue-grey
+        gray: {
+          50: '#FAF7F3',
+          100: '#F3EDE6',
+          200: '#E8DFD5',
+          300: '#D7CABC',
+          400: '#AD9D8D',
+          500: '#7C6C5D',
+          600: '#625548',
+          700: '#4B4038',
+          800: '#342C26',
+          900: '#221C18',
+          950: '#14100D',
+        },
+        // Cream / sand surfaces for the light theme (canvas → cards → borders)
+        sand: {
+          50: '#FFFCF8',
+          100: '#FBF6EF',
+          200: '#F4ECE2',
+          300: '#EADDCF',
+          400: '#DCC9B5',
+          500: '#C4AC93',
+        },
+        // Brown tonal scale (used by FormBlock `brown` variant and subtle accents)
+        brown: {
+          50: '#FAF6F3',
+          100: '#F2EAE4',
+          200: '#E3D3C8',
+          300: '#CDB5A5',
+          400: '#A88B78',
+          500: '#8B6F63',
+          600: '#6B4C3A',
+          700: '#5A3F30',
+          800: '#4A3728',
+          900: '#2D2319',
+        },
         // BCP Morocco Brand Colors
         'bcp': {
           orange: '#FF9900',      // Primary BCP Orange
@@ -54,17 +93,25 @@ export default {
         'gradient-bcp-dark': 'linear-gradient(135deg, #FF8800 0%, #4A3728 100%)',
         'gradient-subtle': 'linear-gradient(135deg, rgba(255, 153, 0, 0.1) 0%, rgba(107, 76, 58, 0.1) 100%)',
       },
+      // Elevation scale: card (rest) < soft < medium (overlays) < hover
       boxShadow: {
-        'bcp-soft': '0 4px 12px rgba(255, 153, 0, 0.08)',
-        'bcp-medium': '0 8px 24px rgba(107, 76, 58, 0.12)',
-        'bcp-card': '0 2px 8px rgba(0, 0, 0, 0.06)',
-        'bcp-hover': '0 12px 32px rgba(255, 153, 0, 0.15)',
+        'bcp-soft': '0 1px 2px rgba(41, 37, 36, 0.04), 0 4px 12px rgba(255, 153, 0, 0.08)',
+        'bcp-medium': '0 2px 6px rgba(41, 37, 36, 0.05), 0 12px 32px -8px rgba(107, 76, 58, 0.18)',
+        'bcp-card': '0 1px 2px rgba(41, 37, 36, 0.04), 0 1px 3px rgba(41, 37, 36, 0.06)',
+        'bcp-hover': '0 2px 4px rgba(41, 37, 36, 0.04), 0 12px 28px -6px rgba(255, 153, 0, 0.18)',
+        'glow': '0 0 0 3px rgba(255, 255, 255, 0.35)',
+      },
+      borderWidth: {
+        '3': '3px',
       },
       animation: {
         'float': 'float 3s ease-in-out infinite',
         'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
         'gradient-shift': 'gradient-shift 4s ease-in-out infinite',
         'fadeIn': 'fadeIn 0.15s ease-out',
+        'slideUp': 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+        'shake': 'shake 0.35s ease-in-out',
+        'progress': 'progress 1.5s ease-in-out infinite',
       },
       keyframes: {
         float: {
@@ -83,6 +130,24 @@ export default {
           '0%': { opacity: 0, transform: 'translateY(-6px) scale(0.97)' },
           '100%': { opacity: 1, transform: 'translateY(0) scale(1)' },
         },
+        slideUp: {
+          '0%': { opacity: 0, transform: 'translateY(8px)' },
+          '100%': { opacity: 1, transform: 'translateY(0)' },
+        },
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '25%': { transform: 'translateX(-4px)' },
+          '75%': { transform: 'translateX(4px)' },
+        },
+        progress: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+      },
+      // Height-based breakpoints: compact layouts for short laptop screens / zoomed browsers
+      screens: {
+        'short': { raw: '(max-height: 820px)' },
+        'tiny': { raw: '(max-height: 680px)' },
       },
       spacing: {
         'safe': 'env(safe-area-inset-bottom)',

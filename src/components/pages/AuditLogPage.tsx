@@ -79,13 +79,13 @@ const AuditLogPage = () => {
   });
 
   const ACTION_COLORS: Record<string, string> = {
-    CREATE: 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-500/10 dark:text-blue-400',
-    UPDATE: 'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-500/10 dark:text-purple-400',
-    DELETE: 'bg-red-50 text-red-600 border-red-100 dark:bg-red-500/10 dark:text-red-400',
-    VALIDATE: 'bg-green-50 text-green-600 border-green-100 dark:bg-green-500/10 dark:text-green-400',
-    REJECT: 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400',
-    SUBMIT: 'bg-cyan-50 text-cyan-600 border-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-400',
-    DRAFT: 'bg-gray-50 text-gray-600 border-gray-100 dark:bg-gray-500/10 dark:text-gray-400',
+    CREATE: 'bg-orange-50 text-orange-700 border-orange-200/70 dark:bg-bcp-orange/10 dark:text-bcp-orange-light dark:border-bcp-orange/20',
+    UPDATE: 'bg-brown-50 text-bcp-brown border-brown-200 dark:bg-bcp-brown/20 dark:text-brown-200 dark:border-bcp-brown/30',
+    DELETE: 'bg-red-50 text-red-700 border-red-200/70 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20',
+    VALIDATE: 'bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20',
+    REJECT: 'bg-rose-50 text-rose-700 border-rose-200/70 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20',
+    SUBMIT: 'bg-amber-50 text-amber-700 border-amber-200/70 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20',
+    DRAFT: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-dark-bg-soft dark:text-gray-400 dark:border-dark-border',
   };
 
   const getActionColor = (action: string) => {
@@ -99,40 +99,40 @@ const AuditLogPage = () => {
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center space-x-4">
-          <div className="w-14 h-14 rounded-2xl bg-bcp-orange flex items-center justify-center shadow-lg shadow-bcp-orange/20">
-            <ClipboardList className="text-white w-7 h-7" />
+      <div className="page-hero">
+        <div className="flex flex-col items-center gap-3.5">
+          <div className="page-hero-icon">
+            <ClipboardList className="w-6 h-6" />
           </div>
-          <div>
-            <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          <div className="flex flex-col items-center">
+            <h1 className="page-title">
               {t('Journal d\'Audit', 'Audit Log')}
             </h1>
-            <p className="text-gray-500 dark:text-dark-text-dim text-sm font-medium mt-1">
+            <p className="page-subtitle">
               {t('Traçabilité complète des actions système', 'Complete traceability of system actions')}
-              {totalElements > 0 && ` — ${totalElements} ${t('entrées', 'entries')}`}
+              {totalElements > 0 && ` - ${totalElements} ${t('entrées', 'entries')}`}
             </p>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="card-base p-4 bg-white/50 dark:bg-dark-bg-soft/50 backdrop-blur-md">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-bcp-orange transition-colors" size={18} />
+      <div className="card-base p-4">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+          <div className="relative flex-1 group w-full">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-bcp-orange transition-colors" size={18} />
             <input
               type="text"
               placeholder={t('Rechercher par utilisateur, action ou entité...', 'Search by user, action or entity...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-dark-bg border border-gray-100 dark:border-dark-border rounded-[1.25rem] focus:ring-4 focus:ring-bcp-orange/10 focus:border-bcp-orange outline-none transition-all text-sm"
+              className="premium-input pl-10"
             />
           </div>
           <select
             value={filterEntity}
             onChange={(e) => { setFilterEntity(e.target.value); setPage(0); }}
-            className="px-4 py-3 bg-white dark:bg-dark-bg border border-gray-100 dark:border-dark-border rounded-[1.25rem] text-sm font-bold text-gray-600 dark:text-dark-text-dim focus:ring-4 focus:ring-bcp-orange/10 focus:border-bcp-orange outline-none"
+            className="premium-input w-full lg:w-auto font-medium text-gray-700 dark:text-gray-200"
           >
             <option value="">{t('Toutes les entités', 'All entities')}</option>
             <option value="PARTNER">Partner</option>
@@ -140,27 +140,30 @@ const AuditLogPage = () => {
             <option value="USER">User</option>
             <option value="ROLE">Role</option>
           </select>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full lg:w-auto">
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => { setDateFrom(e.target.value); setPage(0); }}
-              className="px-3 py-3 bg-white dark:bg-dark-bg border border-gray-100 dark:border-dark-border rounded-[1.25rem] text-sm text-gray-600 dark:text-dark-text-dim focus:ring-4 focus:ring-bcp-orange/10 focus:border-bcp-orange outline-none"
+              className="premium-input flex-1 lg:w-auto px-3 text-gray-700 dark:text-gray-200"
               title={t('Date de début', 'Start date')}
+              aria-label={t('Date de début', 'Start date')}
             />
-            <span className="text-gray-400 text-sm font-bold">→</span>
+            <span className="text-gray-400 text-sm font-medium" aria-hidden="true">→</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => { setDateTo(e.target.value); setPage(0); }}
-              className="px-3 py-3 bg-white dark:bg-dark-bg border border-gray-100 dark:border-dark-border rounded-[1.25rem] text-sm text-gray-600 dark:text-dark-text-dim focus:ring-4 focus:ring-bcp-orange/10 focus:border-bcp-orange outline-none"
+              className="premium-input flex-1 lg:w-auto px-3 text-gray-700 dark:text-gray-200"
               title={t('Date de fin', 'End date')}
+              aria-label={t('Date de fin', 'End date')}
             />
             {(dateFrom || dateTo) && (
               <button
                 onClick={() => { setDateFrom(''); setDateTo(''); setPage(0); }}
-                className="p-2 rounded-xl bg-gray-100 dark:bg-dark-bg-soft text-gray-500 hover:text-bcp-orange transition-all"
+                className="btn-icon flex-shrink-0"
                 title={t('Effacer les dates', 'Clear dates')}
+                aria-label={t('Effacer les dates', 'Clear dates')}
               >
                 ✕
               </button>
@@ -170,20 +173,20 @@ const AuditLogPage = () => {
       </div>
 
       {/* Table */}
-      <div className="card-base overflow-hidden bg-white/50 dark:bg-dark-bg-soft/50 backdrop-blur-md">
-        <div className="overflow-x-auto">
+      <div className="card-base overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-dark-border">
+            <thead className="table-head">
               <tr>
-                <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-widest text-gray-400">{t('Date', 'Date')}</th>
-                <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-widest text-gray-400">{t('Utilisateur', 'User')}</th>
-                <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-widest text-gray-400">{t('Action', 'Action')}</th>
-                <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-widest text-gray-400">{t('Entité', 'Entity')}</th>
-                <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-widest text-gray-400">ID</th>
-                <th className="px-6 py-4 text-left font-bold text-xs uppercase tracking-widest text-gray-400">{t('Détails', 'Details')}</th>
+                <th className="table-th">{t('Date', 'Date')}</th>
+                <th className="table-th">{t('Utilisateur', 'User')}</th>
+                <th className="table-th">{t('Action', 'Action')}</th>
+                <th className="table-th">{t('Entité', 'Entity')}</th>
+                <th className="table-th">ID</th>
+                <th className="table-th">{t('Détails', 'Details')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-dark-border">
+            <tbody className="divide-y divide-gray-100 dark:divide-dark-border">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
@@ -195,32 +198,37 @@ const AuditLogPage = () => {
                 </tr>
               ) : filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                    {t('Aucun journal trouvé', 'No audit logs found')}
+                  <td colSpan={6} className="px-6 py-14 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-dark-bg-soft">
+                        <ClipboardList className="w-7 h-7 text-gray-400" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('Aucun journal trouvé', 'No audit logs found')}</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-orange-50/20 dark:hover:bg-bcp-orange/5 transition-colors">
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400 font-mono text-xs">
-                      {log.timestamp ? new Date(log.timestamp).toLocaleString('fr-FR') : '—'}
+                  <tr key={log.id} className="data-row">
+                    <td className="px-6 py-3.5 text-gray-600 dark:text-gray-400 font-mono text-xs whitespace-nowrap">
+                      {log.timestamp ? new Date(log.timestamp).toLocaleString('fr-FR') : '-'}
                     </td>
-                    <td className="px-6 py-4 font-bold text-gray-800 dark:text-gray-200">
-                      {log.username || '—'}
+                    <td className="px-6 py-3.5 font-medium text-gray-900 dark:text-gray-200">
+                      {log.username || '-'}
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border ${getActionColor(log.action)}`}>
+                    <td className="px-6 py-3.5">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border whitespace-nowrap ${getActionColor(log.action)}`}>
                         {log.action}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400 font-semibold">
+                    <td className="px-6 py-3.5 text-gray-600 dark:text-gray-400 font-medium">
                       {log.entityType}
                     </td>
-                    <td className="px-6 py-4 text-gray-500 font-mono text-xs">
+                    <td className="px-6 py-3.5 text-gray-500 font-mono text-xs">
                       {log.entityId}
                     </td>
-                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs max-w-xs truncate">
-                      {log.description || '—'}
+                    <td className="px-6 py-3.5 text-gray-500 dark:text-gray-400 text-xs max-w-xs truncate" title={log.description || undefined}>
+                      {log.description || '-'}
                     </td>
                   </tr>
                 ))
@@ -231,22 +239,24 @@ const AuditLogPage = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-dark-border">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {t('Page', 'Page')} {page + 1} {t('sur', 'of')} {totalPages} — {totalElements} {t('entrées', 'entries')}
+          <div className="flex items-center justify-between gap-4 px-6 py-3.5 bg-gray-50/60 dark:bg-dark-bg-soft/40 border-t border-gray-100 dark:border-dark-border">
+            <p className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">
+              {t('Page', 'Page')} {page + 1} {t('sur', 'of')} {totalPages} - {totalElements} {t('entrées', 'entries')}
             </p>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="p-2 rounded-xl bg-gray-50 dark:bg-dark-bg-soft border border-gray-100 dark:border-dark-border text-gray-500 hover:text-bcp-orange hover:border-bcp-orange transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label={t('Page précédente', 'Previous page')}
+                className="btn-icon"
               >
                 <ChevronLeft size={18} />
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page >= totalPages - 1}
-                className="p-2 rounded-xl bg-gray-50 dark:bg-dark-bg-soft border border-gray-100 dark:border-dark-border text-gray-500 hover:text-bcp-orange hover:border-bcp-orange transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label={t('Page suivante', 'Next page')}
+                className="btn-icon"
               >
                 <ChevronRight size={18} />
               </button>

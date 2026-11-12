@@ -39,6 +39,28 @@ npm run type-check # Vérification TypeScript sans compilation
 npm run lint       # ESLint
 ```
 
+## Déploiement UAT
+
+L'image frontend est compilée avec Vite dans le Dockerfile. `VITE_API_URL` est
+donc une valeur de build, pas une variable que le chart Helm peut changer après
+le démarrage du pod. Le Dockerfile et le pipeline GitLab la définissent par
+défaut sur `https://enrolment-uat-api.gbp.cpm.net`; la variable CI/CD
+`VITE_API_URL` peut remplacer cette valeur pour un autre environnement. En
+UAT, vérifiez qu'elle ne contient ni adresse IP interne ni URL `http://`.
+
+En UAT, le Nginx externe termine TLS. `enrolment-uat.gbp.cpm.net` sert le
+frontend et route les chemins API vers le backend; `enrolment-uat-api.gbp.cpm.net`
+route les requêtes vers le backend. Avec cette URL d'API dédiée, les appels
+sont cross-origin et le backend doit autoriser l'origine
+`https://enrolment-uat.gbp.cpm.net`. Le Nginx inclus dans l'image frontend sert
+uniquement les fichiers statiques et le fallback SPA ; il ne termine pas TLS
+et ne proxyfie pas le backend.
+
+Le chart Helm se trouve dans le dépôt `frontend-enrolment-deploy` sous
+`helm/enrolment-frontend`. Son Service expose le frontend sur le NodePort
+`30012`; le backend est atteint via le NodePort `30011`. Le job de déploiement
+attend l'image publiée sous le tag GitLab `VERSION`.
+
 ---
 
 ## Architecture du projet

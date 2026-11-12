@@ -4,9 +4,8 @@
  *
  * FLOW:
  *  1. User logs in → backend authenticates via Keycloak + auto-syncs user to DB
- *  2. If requiresPasswordChange=true → redirect to /change-password
- *  3. Admin assigns roles in Users Management
- *  4. User logs in again → roleNames populated → proper access granted
+ *  2. Admin assigns roles in Users Management
+ *  3. User logs in again → roleNames populated → proper access granted
  */
 
 import { create } from 'zustand';
@@ -14,6 +13,7 @@ import { AuthState, User } from '../types';
 import { storage } from '../utils/helpers';
 import { apiService } from '../services/api';
 import { logger } from './logger';
+import { DEV_AUTH_BYPASS, DEV_PREVIEW_USER } from './devAuth';
 
 interface AuthStore extends AuthState {
   setToken: (token: string) => void;
@@ -24,16 +24,15 @@ interface AuthStore extends AuthState {
   logout: () => Promise<void>;
   hydrate: () => void;
   refreshUser: () => Promise<void>;
-  changePassword: (username: string, newPassword: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
   token: null,
-  user: null,
-  isAuthenticated: false,
+  // Dev-only UI preview: start "signed in" with a fake all-roles profile (see utils/devAuth.ts)
+  user: DEV_AUTH_BYPASS ? DEV_PREVIEW_USER : null,
+  isAuthenticated: DEV_AUTH_BYPASS,
   isLoading: false,
   error: null,
-  requiresPasswordChange: false,
 
   setToken: (token: string) => set({ token }),
   setUser: (user: User) => set({ user }),
@@ -41,7 +40,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setError: (error: string | null) => set({ error }),
 
   login: async (username: string, password: string) => {
-    set({ isLoading: true, error: null, requiresPasswordChange: false });
+    set({ isLoading: true, error: null });
     try {
       logger.info('Login attempt started', { username });
       const response = await apiService.login(username, password);
@@ -61,24 +60,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
         isDeleted: false,
       };
 
-      const requiresPasswordChange = loginData?.requiresPasswordChange === true;
-
-      // Temp password user: Keycloak won't issue a token, but we still
-      // need to redirect to /change-password
-      if (requiresPasswordChange && !loginData?.token) {
-        logger.warn('Temporary password flow detected', { username });
-        set({
-          token: null,
-          user,
-          isAuthenticated: true,
-          requiresPasswordChange: true,
-          isLoading: false,
-        });
-        storage.set('user', user);
-        storage.set('requiresPasswordChange', true);
-        return;
-      }
-
       if (!loginData || !loginData.token) {
         throw new Error('No token received from server');
       }
@@ -87,19 +68,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
         token: loginData.token,
         user,
         isAuthenticated: true,
-        requiresPasswordChange,
         isLoading: false,
       });
 
       storage.set('authToken', loginData.token);
       if (loginData.refreshToken) storage.set('refreshToken', loginData.refreshToken);
       storage.set('user', user);
-      storage.set('requiresPasswordChange', requiresPasswordChange);
-
       logger.info('Login successful', {
         username,
         roleCount: user.roleNames.length,
-        requiresPasswordChange,
       });
 
       if (user.roleNames.length === 0) {
@@ -113,54 +90,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
   },
 
-  changePassword: async (username: string, newPassword: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      logger.info('Password change started', { username });
-      await apiService.changePassword(username, newPassword);
-      // Auto-login to get the proper token after password change
-      const response = await apiService.login(username, newPassword);
-      const loginData = response.data.data;
-      
-      if (!loginData || !loginData.token) {
-        throw new Error('Verification failed after password change. Please log in manually.');
-      }
-
-      const user: User = {
-        id: 0,
-        username: loginData?.username || username,
-        email: loginData?.email || '',
-        firstName: loginData?.firstName || '',
-        lastName: loginData?.lastName || '',
-        isActive: true,
-        roleNames: loginData?.roleNames || [],
-        createdAt: '',
-        updatedAt: '',
-        deletedAt: null,
-        isDeleted: false,
-      };
-
-      set({ 
-        token: loginData.token, 
-        user, 
-        isAuthenticated: true, 
-        requiresPasswordChange: false, 
-        isLoading: false 
-      });
-
-      storage.set('authToken', loginData.token);
-      storage.set('user', user);
-      storage.set('requiresPasswordChange', false);
-
-      logger.info('Password changed successfully', { username });
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to update access credentials';
-      set({ error: errorMessage, isLoading: false });
-      logger.error('Password change failed', { username, errorMessage }, error);
-      throw error;
-    }
-  },
-
   logout: async () => {
     try {
       await apiService.logout();
@@ -169,20 +98,21 @@ export const useAuthStore = create<AuthStore>((set) => ({
       // non-critical
       logger.warn('Logout endpoint failed, clearing local session anyway');
     } finally {
-      set({ token: null, user: null, isAuthenticated: false, error: null, requiresPasswordChange: false });
+      set({ token: null, user: null, isAuthenticated: false, error: null });
       storage.remove('authToken');
       storage.remove('user');
-      storage.remove('requiresPasswordChange');
     }
   },
 
   hydrate: () => {
+    if (DEV_AUTH_BYPASS) {
+      set({ token: null, user: DEV_PREVIEW_USER, isAuthenticated: true });
+      return;
+    }
     const token = storage.get('authToken');
     const user = storage.get('user');
-    const requiresPasswordChange = storage.get('requiresPasswordChange') === true;
-
     if (token && user) {
-      set({ token, user, isAuthenticated: true, requiresPasswordChange });
+      set({ token, user, isAuthenticated: true });
       logger.debug('Auth state hydrated from storage', {
         username: user.username,
         roleCount: user.roleNames?.length || 0,
@@ -191,6 +121,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   refreshUser: async () => {
+    if (DEV_AUTH_BYPASS) return;
     const token = storage.get('authToken');
     if (!token) return;
     try {

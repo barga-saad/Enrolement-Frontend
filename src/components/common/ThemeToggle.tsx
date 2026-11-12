@@ -18,14 +18,16 @@ export const ThemeToggle = () => {
 
   return (
     <button
+      type="button"
       onClick={() => setIsDark(!isDark)}
-      className="p-2 rounded-xl bg-warm-200 dark:bg-dark-bg-soft hover:bg-warm-300 dark:hover:bg-bcp-orange-soft transition-all duration-300 group shadow-sm border border-warm-500/10 dark:border-white/5"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 dark:bg-dark-bg-soft hover:bg-orange-50 dark:hover:bg-bcp-orange/10 transition-colors duration-200 group shadow-sm border border-gray-200/80 dark:border-white/10 hover:border-bcp-orange/40"
       aria-label="Toggle dark mode"
+      aria-pressed={isDark}
     >
       {isDark ? (
-        <Sun className="w-5 h-5 text-bcp-orange group-hover:rotate-45 transition-transform duration-500" />
+        <Sun className="w-[18px] h-[18px] text-bcp-orange group-hover:rotate-45 transition-transform duration-300" />
       ) : (
-        <Moon className="w-5 h-5 text-bcp-brown group-hover:-rotate-12 transition-transform duration-500" />
+        <Moon className="w-[18px] h-[18px] text-bcp-brown group-hover:-rotate-12 transition-transform duration-300" />
       )}
     </button>
   );

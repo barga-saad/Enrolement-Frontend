@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { GeometricDecor } from '../common/GeometricDecor';
+import { useIdleLogout } from '../../hooks/useIdleLogout';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,10 +10,12 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Signed-in area only: automatic sign-out after inactivity
+  useIdleLogout();
 
   return (
-    <div className="flex min-h-screen bg-gray-50/50 dark:bg-dark-bg transition-colors duration-300 relative overflow-hidden">
-      {/* Background Decorations (Inspired by Image 1) */}
+    <div className="flex h-screen h-[100dvh] bg-transparent dark:bg-dark-bg transition-colors duration-300 relative overflow-hidden">
+      {/* Background decoration: soft glows, fine curves, dot grid */}
       <GeometricDecor />
 
       {/* Sidebar */}
@@ -25,7 +28,7 @@ const Layout = ({ children }: LayoutProps) => {
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="p-4 md:p-8 max-w-[1600px] mx-auto w-full animate-fadeIn">
+          <div className="px-4 py-6 md:px-8 md:py-8 max-w-[1480px] mx-auto w-full animate-fadeIn">
             {children}
           </div>
         </main>

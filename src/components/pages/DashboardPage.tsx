@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Users, Shield, FileText, TrendingUp, Clock, CheckCircle, ArrowUpRight, Activity, Calendar } from 'lucide-react';
+import { Users, Shield, FileText, Clock, CheckCircle, ArrowUpRight, Activity, Calendar } from 'lucide-react';
 import { useToast } from '../../utils/toastStore';
 import { useAuth } from '../../hooks';
 import { apiService } from '../../services/api';
 import { useLangStore, t } from '../../utils/langStore';
+import { roleLabel } from '../../utils/roles';
 
 interface DashboardStats {
   totalUsers?: number;
@@ -28,7 +29,7 @@ const DashboardPage = () => {
   const { user } = useAuth();
   const { lang: _lang } = useLangStore();
   const [stats, setStats] = useState<DashboardStats>({});
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   const isAdmin = user?.roleNames?.some(
@@ -44,34 +45,29 @@ const DashboardPage = () => {
       setLoading(true);
 
       if (isAdmin) {
-        const [usersRes, rolesRes, partnersRes, permissionsRes, pendingRes, auditRes] = await Promise.allSettled([
+        const [usersRes, rolesRes, permissionsRes, auditRes, partnerStatsRes] = await Promise.allSettled([
           apiService.getUsers(),
           apiService.getRoles(),
-          apiService.getPartners(),
           apiService.getPermissions(),
-          apiService.getPendingValidations(),
           apiService.getAuditLogs(0, 5),
+          apiService.getPartnerStats(),
         ]);
 
         const users = usersRes.status === 'fulfilled' ? (Array.isArray(usersRes.value.data) ? usersRes.value.data : []) : [];
         const roles = rolesRes.status === 'fulfilled' ? (Array.isArray(rolesRes.value.data) ? rolesRes.value.data : []) : [];
-        const partners = partnersRes.status === 'fulfilled' ? (partnersRes.value.data?.data || []) : [];
         const permissions = permissionsRes.status === 'fulfilled' ? (Array.isArray(permissionsRes.value.data) ? permissionsRes.value.data : []) : [];
-        const pendingValidations = pendingRes.status === 'fulfilled' ? (pendingRes.value.data?.data || pendingRes.value.data || []) : [];
+        const partnerStats = partnerStatsRes.status === 'fulfilled' ? (partnerStatsRes.value.data?.data || {}) : {};
         const auditLogs = auditRes.status === 'fulfilled' ? (auditRes.value.data?.data?.content || auditRes.value.data?.content || auditRes.value.data?.data || []) : [];
 
         const activeUsers = Array.isArray(users) ? users.filter((u: any) => u.isActive).length : 0;
         const activeRoles = Array.isArray(roles) ? roles.filter((r: any) => r.isActive).length : 0;
-        const totalPartners = Array.isArray(partners) ? partners.filter((p: any) => p.workflowStatus === 'VALIDATED').length : 0;
-        const pendingApprovals = Array.isArray(pendingValidations) ? pendingValidations.length : 0;
-
         setStats({
           totalUsers: Array.isArray(users) ? users.length : 0,
           activeRoles,
-          totalPartners,
-          pendingApprovals,
           activeUsers,
           totalPermissions: Array.isArray(permissions) ? permissions.length : 0,
+          totalPartners: partnerStats.validated ?? 0,
+          pendingApprovals: partnerStats.pending ?? 0,
         });
 
         const ACTION_STATUS: Record<string, 'success' | 'pending' | 'warning'> = {
@@ -83,9 +79,9 @@ const DashboardPage = () => {
         const activities: RecentActivity[] = Array.isArray(auditLogs) ? auditLogs.slice(0, 5).map((log: any) => ({
           id: String(log.id),
           type: ACTION_TYPE[log.entityType] || 'partner',
-          action: log.action || '—',
+          action: log.action || '-',
           entity: log.username || `#${log.entityId}`,
-          timestamp: log.timestamp ? new Date(log.timestamp).toLocaleString('fr-FR') : '—',
+          timestamp: log.timestamp ? new Date(log.timestamp).toLocaleString('fr-FR') : '-',
           status: Object.entries(ACTION_STATUS).find(([k]) => (log.action || '').toUpperCase().includes(k))?.[1] || 'success',
         })) : [];
         setRecentActivity(activities.slice(0, 5));
@@ -101,9 +97,9 @@ const DashboardPage = () => {
           const activities: RecentActivity[] = Array.isArray(partners) ? partners.slice(0, 3).map((partner: any, index: number) => ({
             id: `partner-${index}`,
             type: 'partner' as const,
-            action: t('Partenaire', 'Partner') + ' — ' + (partner.workflowStatus || ''),
+            action: t('Partenaire', 'Partner') + ' - ' + (partner.workflowStatus || ''),
             entity: partner.partnerName || partner.name || `Partner ${index + 1}`,
-            timestamp: partner.createdAt ? new Date(partner.createdAt).toLocaleDateString('fr-FR') : '—',
+            timestamp: partner.createdAt ? new Date(partner.createdAt).toLocaleDateString('fr-FR') : '-',
             status: partner.workflowStatus === 'VALIDATED' ? 'success' as const : partner.workflowStatus === 'REJECTED' ? 'warning' as const : 'pending' as const,
           })) : [];
           setRecentActivity(activities);
@@ -119,99 +115,93 @@ const DashboardPage = () => {
     }
   };
 
-  const ROLE_LABELS: Record<string, string> = {
-    PROFIL_ADMIN_CENTRAL: t('Admin Central', 'Central Admin'),
-    PROFIL_SAISIE: t('Saisie', 'Data Entry'),
-    PROFIL_VALIDATEUR: t('Validateur', 'Validator'),
-    PROFIL_CONSULTATION: t('Consultation', 'Consultation'),
+
+  // Icon chip background per accent colour (palette: orange / brown / semantic status)
+  const STAT_ICON_BG: Record<string, string> = {
+    'text-bcp-orange': 'bg-orange-50 dark:bg-bcp-orange/10',
+    'text-bcp-brown': 'bg-brown-50 dark:bg-bcp-brown/20',
+    'text-emerald-600': 'bg-emerald-50 dark:bg-emerald-500/10',
+    'text-amber-600': 'bg-amber-50 dark:bg-amber-500/10',
   };
 
   const StatCard = ({ icon: Icon, label, value, color, trend }: any) => (
-    <div className="card-base p-6 group hover:border-bcp-orange/20 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-bcp-orange/5 to-transparent rounded-bl-[4rem] transition-all duration-500 group-hover:w-32 group-hover:h-32" />
-      
+    <div className="card-base card-interactive p-5 group relative overflow-hidden">
+      {/* Decorative corner rings + hover accent line */}
+      <svg className="absolute -right-10 -bottom-12 h-36 w-36 pointer-events-none" viewBox="0 0 140 140" fill="none" aria-hidden="true">
+        <circle cx="70" cy="70" r="60" stroke="#FF9900" strokeOpacity="0.14" strokeWidth="1.2" />
+        <circle cx="70" cy="70" r="44" stroke="#6B4C3A" strokeOpacity="0.10" strokeWidth="1" />
+      </svg>
+      <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-bcp-orange via-bcp-orange-light to-bcp-brown opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
       <div className="flex items-start justify-between relative z-10">
         <div>
-          <p className="text-gray-500 dark:text-dark-text-dim text-xs font-bold uppercase tracking-widest mb-1">{label}</p>
+          <p className="text-gray-500 dark:text-dark-text-dim text-[11px] font-semibold uppercase tracking-[0.1em] mb-2">{label}</p>
           <div className="flex items-baseline space-x-2">
-            <h3 className={`text-3xl font-black ${color}`}>
+            <h3 className="text-3xl font-bold tabular-nums tracking-tight text-brown-900 dark:text-white">
               {loading ? <div className="w-12 h-8 bg-gray-100 dark:bg-dark-bg-soft animate-pulse rounded-lg" /> : (value ?? 0)}
             </h3>
             {trend && (
-              <span className="text-[10px] font-bold text-green-500 flex items-center">
+              <span className="text-[10px] font-bold text-emerald-600 flex items-center">
                 <ArrowUpRight className="w-3 h-3 mr-0.5" />
                 {trend}
               </span>
             )}
           </div>
         </div>
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm ${color.replace('text-', 'bg-').replace('-600', '-50 dark:bg-opacity-10')}`}>
-          <Icon size={24} className={color} />
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ring-1 ring-black/[0.04] transition-transform duration-300 group-hover:scale-105 ${STAT_ICON_BG[color] || 'bg-gray-100 dark:bg-dark-bg-soft'}`}>
+          <Icon size={22} className={`${color} ${color === 'text-bcp-brown' ? 'dark:text-brown-300' : ''}`} />
         </div>
       </div>
     </div>
   );
 
-  const ActivityIcon = ({ type }: any) => {
-    switch (type) {
-      case 'user':
-        return <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-xl"><Users size={18} className="text-blue-600 dark:text-blue-400" /></div>;
-      case 'partner':
-        return <div className="p-2 bg-green-50 dark:bg-green-500/10 rounded-xl"><FileText size={18} className="text-green-600 dark:text-green-400" /></div>;
-      case 'role':
-        return <div className="p-2 bg-purple-50 dark:bg-purple-500/10 rounded-xl"><Shield size={18} className="text-purple-600 dark:text-purple-400" /></div>;
-      case 'approval':
-        return <div className="p-2 bg-amber-50 dark:bg-amber-500/10 rounded-xl"><Clock size={18} className="text-amber-600 dark:text-amber-400" /></div>;
-      default:
-        return <div className="p-2 bg-gray-50 dark:bg-gray-500/10 rounded-xl"><TrendingUp size={18} className="text-gray-600 dark:text-gray-400" /></div>;
-    }
-  };
-
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Premium Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 rounded-[2rem] bg-bcp-orange flex items-center justify-center shadow-xl shadow-bcp-orange/20 animate-float">
-            <Activity className="text-white w-8 h-8" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{t('Vue d\'ensemble', 'Overview')}</h1>
-              <span className="px-3 py-1 bg-bcp-orange/10 text-bcp-orange text-[10px] font-black uppercase tracking-widest rounded-full border border-bcp-orange/20">
-                {ROLE_LABELS[user?.roleNames?.[0] || ''] || user?.roleNames?.[0]}
-              </span>
-            </div>
-            <p className="text-gray-500 dark:text-dark-text-dim text-sm font-medium mt-0.5 flex items-center">
-              <Calendar className="w-4 h-4 mr-1.5" />
-              {t('Analyses d\'efficacité pour', 'Efficiency analytics for')} {user?.firstName || 'User'}
-            </p>
-          </div>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Page introduction */}
+      <div className="page-hero">
+        <div className="page-hero-icon">
+          <Activity className="w-6 h-6" />
         </div>
-        
-        <div className="flex items-center space-x-3">
-          <button 
+        <div className="flex flex-col items-center">
+          {/* All roles held by the user */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-2.5">
+            {(user?.roleNames ?? []).map((role) => (
+              <span key={role} className="badge badge-brand uppercase tracking-wider text-[10px]">
+                {roleLabel(role)}
+              </span>
+            ))}
+          </div>
+          <h1 className="page-title">{t('Vue d\'ensemble', 'Overview')}</h1>
+          <p className="page-subtitle flex items-center justify-center">
+            <Calendar className="w-4 h-4 mr-1.5 text-bcp-orange" />
+            {t('Analyses d\'efficacité pour', 'Efficiency analytics for')} {user?.firstName || 'User'}
+          </p>
+        </div>
+
+        <div className="page-hero-actions">
+          <button
             onClick={loadDashboardData}
-            className="px-4 py-2 bg-white dark:bg-dark-bg-soft border border-gray-100 dark:border-dark-border rounded-xl text-xs font-bold text-gray-600 dark:text-dark-text-dim hover:border-bcp-orange transition-all flex items-center space-x-2 shadow-sm"
+            aria-busy={loading}
+            className="btn-outline"
           >
-            <Activity className="w-3.5 h-3.5" />
+            <Activity className={`w-4 h-4 ${loading ? 'animate-pulse text-bcp-orange' : ''}`} />
             <span>{t('Actualiser Sync', 'Refresh Sync')}</span>
           </button>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className={`grid gap-6 ${isAdmin ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+      <div className={`grid gap-4 md:gap-6 ${isAdmin ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
         {isAdmin && (
           <>
-            <StatCard icon={Users} label={t('Utilisateurs Globaux', 'Global Users')} value={stats.totalUsers} color="text-blue-600" />
-            <StatCard icon={CheckCircle} label={t('Utilisateurs Actifs', 'Active Users')} value={stats.activeUsers} color="text-green-600" />
-            <StatCard icon={Shield} label={t('Rôles Personnalisés', 'Custom Roles')} value={stats.activeRoles} color="text-purple-600" />
+            <StatCard icon={Users} label={t('Utilisateurs Globaux', 'Global Users')} value={stats.totalUsers} color="text-bcp-brown" />
+            <StatCard icon={CheckCircle} label={t('Utilisateurs Actifs', 'Active Users')} value={stats.activeUsers} color="text-emerald-600" />
+            <StatCard icon={Shield} label={t('Rôles Personnalisés', 'Custom Roles')} value={stats.activeRoles} color="text-bcp-orange" />
           </>
         )}
-        <StatCard icon={FileText} label={t('Partenaires Enregistrés', 'Registered Partners')} value={stats.totalPartners} color="text-indigo-600" />
+        <StatCard icon={FileText} label={t('Partenaires Enregistrés', 'Registered Partners')} value={stats.totalPartners} color="text-bcp-orange" />
         <StatCard icon={Clock} label={t('En Attente d\'Approbation', 'Awaiting Approval')} value={stats.pendingApprovals} color="text-amber-600" />
-        {isAdmin && <StatCard icon={Shield} label={t('Permissions Système', 'System Permissions')} value={stats.totalPermissions} color="text-cyan-600" />}
+        {isAdmin && <StatCard icon={Shield} label={t('Permissions Système', 'System Permissions')} value={stats.totalPermissions} color="text-bcp-brown" />}
       </div>
 
     </div>

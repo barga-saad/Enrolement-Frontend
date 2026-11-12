@@ -36,7 +36,19 @@ const LoginPage = () => {
     try {
       await login(username, password);
     } catch (err: any) {
-      setError(err.response?.data?.message || t('Échec de la vérification. Ré-authentifiez-vous avec des identifiants autorisés.', 'Verification failed. Re-authenticate with authorized credentials.'));
+      const errorCode = err.response?.data?.error?.errorCode;
+      if (errorCode === 'USER_NOT_REGISTERED') {
+        setError(t(
+          "Accès refusé : votre compte n'est pas encore enregistré dans l'application. Contactez votre agent d'habilitation.",
+          'Access denied: your account is not registered in the application yet. Please contact your access management agent.'
+        ));
+      } else if (errorCode === 'ACCOUNT_DISABLED') {
+        setError(t('Accès refusé : votre compte est désactivé.', 'Access denied: your account is disabled.'));
+      } else if (errorCode === 'INVALID_CREDENTIALS') {
+        setError(t('Identifiant ou mot de passe incorrect.', 'Invalid username or password.'));
+      } else {
+        setError(err.response?.data?.message || t('Échec de la vérification. Ré-authentifiez-vous avec des identifiants autorisés.', 'Verification failed. Re-authenticate with authorized credentials.'));
+      }
     }
   };
 
